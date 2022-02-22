@@ -353,111 +353,99 @@ defaultSow = dt.datetime.strptime('15-10-2020','%d-%m-%Y')
 defaultHarv = dt.datetime.strptime('10-03-2021','%d-%m-%Y')
 Tt = DeriveMedianTt(defaultLoc,defaultSow)
 
-app.layout = html.Div([
-    dbc.Card(
-    dbc.CardBody([
-    dbc.Row([dbc.Col([html.Div('Location of field')], width=1, align='right'),
-             dbc.Col([dcc.Dropdown(id="Location",options = MetDropDown,value=defaultLoc)], width=3, align='center')]), 
+def CropInputs(pos):
+    return dbc.CardBody([
+    dbc.Row([dbc.Col([html.H1(pos+" Crop")], width=6 ,align='center'),
+             dbc.Col([dcc.Dropdown(id=pos+"Crop",options = CropDropDown,value='Potatolong')], width=6 ,align='center'),]),
     html.Br(),
-    dbc.Row([dbc.Col([html.Div('Current Crop')], width=4 ,align='center'),
-             dbc.Col([html.Div('Previous Crop')], width=4 ,align='center')]),
+    dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
+             dbc.Col([html.Div('Salable Yield')], width=3, align='center'),
+             dbc.Col([dcc.Input(id=pos+"SaleableYield", type="number",value=70,min=0.01)], width=3, align='center'),
+             dbc.Col([dcc.Dropdown(id=pos+"Units", options = UnitsDropDown,value='t/ha')], width=3, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.Dropdown(id="CurrentCrop",options = CropDropDown,value='Potatolong')], width=4 ,align='center'),
-             dbc.Col([dcc.Dropdown(id="PreviousCrop",options = CropDropDown,value='Wheatautumn')], width=4 ,align='center')]), 
+    dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
+             dbc.Col([html.Div('Field Loss (%)')], width=3, align='center'),
+             dbc.Col([html.Div('Dressing loss (%)')], width=3, align='center'),
+             dbc.Col([html.Div('Moisture (%)')], width=3, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([html.Div('Salable Yield')], width=1, align='center'),
-             dbc.Col([html.Div('Units')], width=1, align='center'),
-             dbc.Col([html.Div('')], width=2, align='center'),
-             dbc.Col([html.Div('Salable Yield')], width=1, align='center'),
-             dbc.Col([html.Div('Units')], width=1, align='center')]), 
+    dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
+             dbc.Col([dcc.Input(id=pos+"FieldLoss", type="number",value=10,min=0,max=100)], width=3, align='center'),
+             dbc.Col([dcc.Input(id=pos+"DressingLoss", type="number",value=5,min=0,max=100)], width=3, align='center'),
+             dbc.Col([dcc.Input(id=pos+"MoistureContent", type="number",value=77,min=10,max=96)], width=3, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.Input(id="CCSaleableYield", type="number",value=70,min=0.01)], width=1, align='center'),
-             dbc.Col([dcc.Dropdown(id="CCUnits", options = UnitsDropDown,value='t/ha')], width=1, align='center'),
-             dbc.Col([html.Div('')], width=2, align='center'),
-             dbc.Col([dcc.Input(id="PCSaleableYield", type="number",value=12,min=0.01)], width=1, align='center'),
-             dbc.Col([dcc.Dropdown(id="PCUnits", options = UnitsDropDown,value='t/ha')], width=1, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Field Losses (%)')], width=1, align='center'),
-             dbc.Col([html.Div('Dressing losses (%)')], width=1, align='center'),
-             dbc.Col([html.Div('Moisture (%)')], width=1, align='center'),
-             dbc.Col([html.Div('')], width=1, align='center'),
-             dbc.Col([html.Div('Field Losses (%)')], width=1, align='center'),
-             dbc.Col([html.Div('Dressing Losses(%)')], width=1, align='center'),
-             dbc.Col([html.Div('Moisture (%)')], width=1, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([dcc.Input(id="CCFieldLoss", type="number",value=10,min=0,max=100)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="CCDressingLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="CCMoistureContent", type="number",value=77,min=10,max=96)], width=1, align='center'),
-             dbc.Col([html.Div('')], width=1, align='center'),
-             dbc.Col([dcc.Input(id="PCFieldLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="PCDressingLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="PCMoistureContent", type="number",value=15,min=10,max=96)], width=1, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Planting Date')], width=1, align='center'),
+    dbc.Row([dbc.Col([html.Div('Planting Date')], width=3, align='center'),
+             dbc.Col([dcc.DatePickerSingle(id=pos+"EstablishDate", min_date_allowed=dt.date(2020, 1, 1),
+                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+                                            date=defaultSow,display_format='D-MMM-YYYY')], width=3, align='center'),
              dbc.Col([html.Div('Planting method')], width=3, align='center'),
-             dbc.Col([html.Div('Residue Treatment')], width=1, align='center')]), 
+             dbc.Col([dcc.Dropdown(id=pos+"EstablishStage",options =EstablishStageDropdown,value='Seed')], width=3, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.DatePickerSingle(id='EstablishDate', min_date_allowed=dt.date(2020, 1, 1),
+    dbc.Row([dbc.Col([html.Div('Harvest Date')], width=3, align='center'),
+             dbc.Col([dcc.DatePickerSingle(id=pos+"HarvestDate", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            date=defaultSow,display_format='Do/MMM/YYYY')], width=1, align='center'),
-            dbc.Col([dcc.Dropdown(id="EstablishStage",options =EstablishStageDropdown,value='Seed')], width=3, align='center'),
-            dbc.Col([dcc.Dropdown(id="Residue Treatment", options=ResidueTreatmentsDropdown,value='Incorporated')],width=3, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Harvest Date')], width=1, align='center'),
+                                            date=defaultHarv,display_format='D-MMM-YYYY')], width=3, align='center'), 
              dbc.Col([html.Div('Harvest Stage')], width=3, align='center'),
-             dbc.Col([html.Div('HWEON')], width=1, align='center')]), 
+             dbc.Col([dcc.Dropdown(id=pos+"HarvestStage",options = HarvestStageDropdown,value='Maturity')], width=3, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.DatePickerSingle(id='HarvestDate', min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            date=defaultHarv,display_format='Do/MMM/YYYY')], width=1, align='center'), 
-             dbc.Col([dcc.Dropdown(id="HarvestStage",options = HarvestStageDropdown,value='Maturity')], width=3, align='center'),
-             dbc.Col([dcc.Input(id="HWEON", type="number",value=20)],width=3, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([dcc.Graph(id='CropUptakeGraph')], width=4, align='center'), 
-             dbc.Col([dcc.Graph(id='SoilMineralisation')], width=4, align='center'),
-            dbc.Col([dcc.Graph(id='SoilN')], width=4, align='center')]), 
-    html.Br(),
-    ]), color = 'dark'
-    )
-])
+    dbc.Row([dbc.Col([html.Div('ResidueTreatment')], width=3, align='center'), 
+            dbc.Col([dcc.Dropdown(id=pos+"Residue Treatment", options=ResidueTreatmentsDropdown,value='Incorporated')],width=3, align='center')]), 
+    ])
 
-@app.callback(
-    Output('CropUptakeGraph','figure'),
-    Input('Location','value'),
-    Input('CurrentCrop','value'),
-    Input('CCSaleableYield','value'),
-    Input('CCUnits','value'),
-    Input('CCFieldLoss','value'),
-    Input('CCDressingLoss','value'),
-    Input('CCMoistureContent','value'),
-    Input('EstablishDate','date'),
-    Input('HarvestDate','date'),
-    Input('EstablishStage','value'),
-    Input('HarvestStage','value'))
-def update_Cropgraph(Location,Crop,CCSaleableYield,CCUnits,CCFieldLoss,CCDressingLoss,CCMoistureContent,
-                     EstablishDate,HarvestDate,EstablishStage,HarvestStage):
-    EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
-    HarvestDate = dt.datetime.strptime(str(HarvestDate).split('T')[0],'%Y-%m-%d')
-    UnitConverter = Units.loc[CCUnits,'toKG/ha']
-    EndYearDate  = EstablishDate + dt.timedelta(days = 365)
-    Tt = DeriveMedianTt(Location,EstablishDate)
-    Data = DeriveCropUptake(Tt,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,
-                            CCSaleableYield,CCFieldLoss,CCDressingLoss,CCMoistureContent,UnitConverter)
-    fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],range_x = [EstablishDate,EndYearDate])
-    return fig
+app.layout = html.Div([
+    dbc.Row([dbc.Col(html.H1("Field Location"), width=3 ,align='center'),
+             dbc.Col(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln'), width=3 ,align='center')]),
+    dbc.Row([dbc.Col(html.H1("Soil Tests"), width=2 ,align='center'),
+             dbc.Col(html.Div('HWEON'),width=1,align='center'),
+             dbc.Col(dcc.Input(id="HWEON",type="number",value = 17,min=0),width=1, align='center'),
+             dbc.Col(html.Div(''),width=1, align='center'),
+             dbc.Col(html.Div('Mineral N'),width=1,align='center'),
+             dbc.Col(dcc.Input(id="MineralN",type="number",value = 17,min=0),width=1, align='center'),
+             ]),
+    dbc.Row([dbc.Col(dbc.Card(CropInputs("Prior"))),
+             dbc.Col(dbc.Card(CropInputs("Current"))),
+             dbc.Col(dbc.Card(CropInputs("Following")))]),
+    dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='CropUptakeGraph')),width=4),
+             dbc.Col(dbc.Card(dcc.Graph(id='SoilMineralisation')),width=4),
+             dbc.Col(dbc.Card(dcc.Graph(id='SoilN')),width=4)])
+    ])
     
-@app.callback(
-    Output('SoilMineralisation','figure),
-    Input('Location','value'),
-    Input('EstablishDate','date'),
-    Input('HWEON','value'),
-    Input('PreviousCrop','value')
-    Input('PreviousCropYield','value')       
-    Input('ResidueTreatment','value'))
-def update_MineralisationGraph(Location,EstablishDate,HWEON,PreviousCrop,PreviousCropYield,
-    EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
-    Tt = DeriveMedianTt(Location,EstablishDate)
-    StartResidue = 
+# @app.callback(
+#     Output('CropUptakeGraph','figure'),
+#     Input('Location','value'),
+#     Input('CurrentCrop','value'),
+#     Input('CCSaleableYield','value'),
+#     Input('CCUnits','value'),
+#     Input('CCFieldLoss','value'),
+#     Input('CCDressingLoss','value'),
+#     Input('CCMoistureContent','value'),
+#     Input('EstablishDate','date'),
+#     Input('HarvestDate','date'),
+#     Input('EstablishStage','value'),
+#     Input('HarvestStage','value'))
+# def update_Cropgraph(Location,Crop,CCSaleableYield,CCUnits,CCFieldLoss,CCDressingLoss,CCMoistureContent,
+#                      EstablishDate,HarvestDate,EstablishStage,HarvestStage):
+#     EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
+#     HarvestDate = dt.datetime.strptime(str(HarvestDate).split('T')[0],'%Y-%m-%d')
+#     UnitConverter = Units.loc[CCUnits,'toKG/ha']
+#     EndYearDate  = EstablishDate + dt.timedelta(days = 365)
+#     Tt = DeriveMedianTt(Location,EstablishDate)
+#     Data = DeriveCropUptake(Tt,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,
+#                             CCSaleableYield,CCFieldLoss,CCDressingLoss,CCMoistureContent,UnitConverter)
+#     fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],range_x = [EstablishDate,EndYearDate])
+#     return fig
+    
+# @app.callback(
+#     Output('SoilMineralisation','figure),
+#     Input('Location','value'),
+#     Input('EstablishDate','date'),
+#     Input('HWEON','value'),
+#     Input('PreviousCrop','value')
+#     Input('PreviousCropYield','value')       
+#     Input('ResidueTreatment','value'))
+# def update_MineralisationGraph(Location,EstablishDate,HWEON,PreviousCrop,PreviousCropYield,
+#     EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
+#     Tt = DeriveMedianTt(Location,EstablishDate)
+#     StartResidue = 
     
 # Run app and display result inline in the notebook
 app.run_server(mode='External')
