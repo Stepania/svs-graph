@@ -66,6 +66,11 @@ for f in metFiles.keys():
 Units = pd.DataFrame(index = ['t/ha','kg/ha'],data=[1000,1],columns=['toKG/ha'])
 UnitsDropDown = [{'label':i,'value':i} for i in Units.index]
 
+ResidueTreatments = pd.DataFrame(index = ['Incorporated','Left on Surface','Baled','Garzed','Burnt'],
+                                 data = [0,0,80,50,90],
+                                 columns = ['%returned'])
+ResidueTreatmentsDropdown = [{'label':i,'value':i} for i in ResidueTreatments.index]
+
 # +
 BiomassScaller = []
 Covers = []
@@ -149,7 +154,7 @@ def firstIndex(series,threshold):
         pos +=1
     return pos
 
-def DeriveMedianTt(Loc,EstablishDate,HarvestDate):
+def DeriveMedianTt(Loc,EstablishDate):
     ## Calculate median thermaltime for location
     Met = metFiles[Loc]
     FirstYear = int(Met.Year[0])
@@ -160,8 +165,6 @@ def DeriveMedianTt(Loc,EstablishDate,HarvestDate):
     TT = pd.DataFrame(columns = years,index = range(1,368))
     for y in years:
         start = str(EstablishDate.day) + '-' + str(EstablishDate.month) + '-' + str(int(y))
-        end = str(HarvestDate.day) + '-' + str(HarvestDate.month) + '-' + str(int(y)+1)
-        duration = (dt.datetime.strptime(end,'%d-%m-%Y') - dt.datetime.strptime(start,'%d-%m-%Y')).days
         try:
             TT.loc[:,y] = Met.loc[start:,'tt'].cumsum().values[:367]
         except:
@@ -171,8 +174,8 @@ def DeriveMedianTt(Loc,EstablishDate,HarvestDate):
     TTmed.name = 'Tt'
     return TTmed
 
-
-def DeriveCropUptake(TTmed,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,ExpectedYield):
+def DeriveCropUptake(TTmed,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,
+                     CCSaleableYield,CCFieldLoss,CCDressingLoss,CCMoistureContent,UnitConverter):
     ## Calculate model parameters 
     Tt_Harv = TTmed[HarvestDate]
     Tt_estab = Tt_Harv * (StagePropns.loc[EstablishStage,'PrpnTt']/StagePropns.loc[HarvestStage,'PrpnTt'])
@@ -182,40 +185,28 @@ def DeriveCropUptake(TTmed,EstablishDate,HarvestDate,EstablishStage,HarvestStage
     BiomassScaller = []
     for tt in TTmed[EstablishDate:HarvestDate]:
         BiomassScaller.append(1/(1+np.exp(-((tt-Xo_Biomass)/(b_Biomass)))))
-    RejectProportion = 0.1 # Proportion of tubers left in feild
-    TotalProduct = ExpectedYield * (1 + RejectProportion)
-    DryYield = TotalProduct * 1000 * CropCoefficients.loc[Crop,'k_DM'] # dry matter content of tubers
-    HI = CropCoefficients.loc[Crop,'a_Harvest'] + ExpectedYield * CropCoefficients.loc[Crop,'b_harvest']
-    StoverYield = DryYield * 1/HI - DryYield # Harvest index
-    RootYield = (StoverYield+DryYield) * CropCoefficients.loc[Crop,'p_Root']
-    ProductN = DryYield * CropCoefficients.loc[Crop,'Nconc_Tops']
-    StoverN = StoverYield * CropCoefficients.loc[Crop,'Nconc_Stover']
-    RootN = RootYield * CropCoefficients.loc[Crop,'Nconc_Roots']
-    totalN = ProductN + StoverN + RootN
-    CropN = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM'])), totalN)
-    return pd.DataFrame(index=TTmed[EstablishDate:HarvestDate].index,data=CropN,columns=['Values'])
     
-def MineralisationGraph(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,p,col):
-    ## Calculate median thermaltime for location
-    FirstYear = int(Met.Year[0])
-    years = [int(x) for x in Met.Year.drop_duplicates().values[1:-1]]
-    day = int(Establish.split('-')[0])
-    month = dt.datetime.strptime(Establish.split('-')[1],'%b').month
-    FirstDate = dt.datetime(FirstYear,month,day)
-
-    Met.loc[:,'tt'] = [tt(x,5) for x in Met.Temp]
-    TT = pd.DataFrame(columns = years,index = range(1,368))
-    for y in years:
-        start = Establish + '-' + str(y)
-        end = Establish + '-' + str(y+1)
-        try:
-            TT.loc[:,y] = Met.loc[start:,'tt'].cumsum().values[:367]
-        except:
-            do = 'nothing'
-    TTmed = (TT.median(axis=1))/30 # (TT.median(axis=1)-[5*x for x in TT.index])/30
-    TTmed.index = pd.date_range(start=Establish+'-2000',periods=367,freq='D',name='Date')
-    TTmed.name = 'Tt'
-
+    FreshProductWt = CCSaleableYield * (1 + CCFieldLoss/100) * (1 + CCDressingLoss/100)
+    DryProductWt = FreshProductWt * UnitConverter * (1-CCMoistureContent/100)
+    HI = CropCoefficients.loc[Crop,'a_Harvest'] + CCSaleableYield * UnitConverter * CropCoefficients.loc[Crop,'b_harvest']
+    DryStoverWt = DryProductWt * 1/HI - DryProductWt 
+    DryRootWt = (DryStoverWt+DryProductWt) * CropCoefficients.loc[Crop,'p_Root']
+    TotalProductN = DryProductWt * CropCoefficients.loc[Crop,'Nconc_Tops']/100
+    TotalStoverN = DryStoverWt * CropCoefficients.loc[Crop,'Nconc_Stover']/100
+    TotalRootN = DryRootWt * CropCoefficients.loc[Crop,'Nconc_Roots']/100
+    TotalResidueN = TotalRootN + TotalStoverN + (TotalProductN * CCFieldLoss/100)
+    TotalCropN = TotalRootN + TotalStoverN + TotalProductN  
+    RootN = pd.DataFrame(index=TTmed[EstablishDate:HarvestDate].index,columns=['Values'],data=np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM'])), TotalRootN))
+    StoverN = pd.DataFrame(index=TTmed[EstablishDate:HarvestDate].index,columns=['Values'],data=np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM'])), TotalRootN+TotalStoverN))
+    ResidueN = pd.DataFrame(index=TTmed[EstablishDate:HarvestDate].index,columns=['Values'],data=np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM'])), TotalResidueN))
+    TotalN = pd.DataFrame(index=TTmed[EstablishDate:HarvestDate].index,columns=['Values'],data=np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM'])), TotalCropN))
+    Root = pd.concat([RootN],axis=0,keys=['Root'],names=['Nitrogen'])
+    Stover = pd.concat([StoverN],axis=0,keys=['Stover'],names=['Nitrogen'])
+    Residue = pd.concat([ResidueN],axis=0,keys=['Residue'],names=['Nitrogen'])
+    Total = pd.concat([TotalN],axis=0,keys=['Total'],names=['Nitrogen'])
+    return pd.concat([Root,Stover,Residue,Total],axis=0).reset_index()
+    
+def MineralisationGraph(TTmed,EstablishDate,HWEON):
     ## Calculate date variables
     EstabDate = MakeDate(Establish,'')
     HarvestDate = MakeDate(Harvest,EstabDate)
@@ -315,6 +306,21 @@ def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,Fi
 
 
 # +
+EstablishDate = defaultSow
+HarvestDate = defaultHarv
+Tt = DeriveMedianTt('Lincoln',EstablishDate,HarvestDate)
+    
+Data = DeriveCropUptake(Tt,EstablishDate,HarvestDate,'Seed','Maturity','Barleyspring',
+                     12,10,10,14,1000)
+px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','yellow','red','green'])
+# -
+
+Data
+
+px.line(data_frame=Data,x='Tt',y='Values',color='Nitrogen',color_discrete_sequence=['brown','yellow','red','green'],range_x = [EstablishDate,EndYearDate])
+
+
+# +
 # Iris bar figure
 def drawFigure():
     return  html.Div([
@@ -343,9 +349,9 @@ df = px.data.iris()
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
 
 defaultLoc = 'Lincoln'
-defaultSow = dt.datetime.strptime('01-01-2020','%d-%m-%Y')
-defaultHarv = dt.datetime.strptime('10-10-2020','%d-%m-%Y')
-Tt = DeriveMedianTt(defaultLoc,defaultSow,defaultHarv)
+defaultSow = dt.datetime.strptime('15-10-2020','%d-%m-%Y')
+defaultHarv = dt.datetime.strptime('10-03-2021','%d-%m-%Y')
+Tt = DeriveMedianTt(defaultLoc,defaultSow)
 
 app.layout = html.Div([
     dbc.Card(
@@ -353,33 +359,49 @@ app.layout = html.Div([
     dbc.Row([dbc.Col([html.Div('Location of field')], width=1, align='right'),
              dbc.Col([dcc.Dropdown(id="Location",options = MetDropDown,value=defaultLoc)], width=3, align='center')]), 
     html.Br(),
-    dbc.Row(dbc.Col([html.Div('Crop Grown.')], width=3 ,align='center')),
+    dbc.Row([dbc.Col([html.Div('Current Crop')], width=4 ,align='center'),
+             dbc.Col([html.Div('Previous Crop')], width=4 ,align='center')]),
     html.Br(),
-    dbc.Row([dbc.Col([dcc.Dropdown(id="Crop",options = CropDropDown,value='Barleyspring')], width=3 ,align='center')]), 
+    dbc.Row([dbc.Col([dcc.Dropdown(id="CurrentCrop",options = CropDropDown,value='Potatolong')], width=4 ,align='center'),
+             dbc.Col([dcc.Dropdown(id="PreviousCrop",options = CropDropDown,value='Wheatautumn')], width=4 ,align='center')]), 
     html.Br(),
     dbc.Row([dbc.Col([html.Div('Salable Yield')], width=1, align='center'),
+             dbc.Col([html.Div('Units')], width=1, align='center'),
+             dbc.Col([html.Div('')], width=2, align='center'),
+             dbc.Col([html.Div('Salable Yield')], width=1, align='center'),
              dbc.Col([html.Div('Units')], width=1, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.Input(id="ExpectedYield", type="number",value=20)], width=1, align='center'),
-             dbc.Col([dcc.Dropdown(id="Units", options = UnitsDropDown,value='t/ha')], width=1, align='center')]), 
+    dbc.Row([dbc.Col([dcc.Input(id="CCSaleableYield", type="number",value=70,min=0.01)], width=1, align='center'),
+             dbc.Col([dcc.Dropdown(id="CCUnits", options = UnitsDropDown,value='t/ha')], width=1, align='center'),
+             dbc.Col([html.Div('')], width=2, align='center'),
+             dbc.Col([dcc.Input(id="PCSaleableYield", type="number",value=12,min=0.01)], width=1, align='center'),
+             dbc.Col([dcc.Dropdown(id="PCUnits", options = UnitsDropDown,value='t/ha')], width=1, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([html.Div('Field Harvest (%)')], width=1, align='center'),
-             dbc.Col([html.Div('Dressing (%)')], width=1, align='center'),
+    dbc.Row([dbc.Col([html.Div('Field Losses (%)')], width=1, align='center'),
+             dbc.Col([html.Div('Dressing losses (%)')], width=1, align='center'),
+             dbc.Col([html.Div('Moisture (%)')], width=1, align='center'),
+             dbc.Col([html.Div('')], width=1, align='center'),
+             dbc.Col([html.Div('Field Losses (%)')], width=1, align='center'),
+             dbc.Col([html.Div('Dressing Losses(%)')], width=1, align='center'),
              dbc.Col([html.Div('Moisture (%)')], width=1, align='center')]), 
     html.Br(),
-    dbc.Row([dbc.Col([dcc.Input(id="FieldHarvest", type="number",value=10)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="Dressing", type="number",value=10)], width=1, align='center'),
-             dbc.Col([dcc.Input(id="MoistureContent", type="number",value=80)], width=1, align='center')]), 
+    dbc.Row([dbc.Col([dcc.Input(id="CCFieldLoss", type="number",value=10,min=0,max=100)], width=1, align='center'),
+             dbc.Col([dcc.Input(id="CCDressingLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
+             dbc.Col([dcc.Input(id="CCMoistureContent", type="number",value=77,min=10,max=96)], width=1, align='center'),
+             dbc.Col([html.Div('')], width=1, align='center'),
+             dbc.Col([dcc.Input(id="PCFieldLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
+             dbc.Col([dcc.Input(id="PCDressingLoss", type="number",value=5,min=0,max=100)], width=1, align='center'),
+             dbc.Col([dcc.Input(id="PCMoistureContent", type="number",value=15,min=10,max=96)], width=1, align='center')]), 
     html.Br(),
     dbc.Row([dbc.Col([html.Div('Planting Date')], width=1, align='center'),
              dbc.Col([html.Div('Planting method')], width=3, align='center'),
-             dbc.Col([html.Div('Residue')], width=1, align='center')]), 
+             dbc.Col([html.Div('Residue Treatment')], width=1, align='center')]), 
     html.Br(),
     dbc.Row([dbc.Col([dcc.DatePickerSingle(id='EstablishDate', min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
                                             date=defaultSow,display_format='Do/MMM/YYYY')], width=1, align='center'),
             dbc.Col([dcc.Dropdown(id="EstablishStage",options =EstablishStageDropdown,value='Seed')], width=3, align='center'),
-            dbc.Col([dcc.Input(id="Residue", type="number",value=20)],width=3, align='center')]), 
+            dbc.Col([dcc.Dropdown(id="Residue Treatment", options=ResidueTreatmentsDropdown,value='Incorporated')],width=3, align='center')]), 
     html.Br(),
     dbc.Row([dbc.Col([html.Div('Harvest Date')], width=1, align='center'),
              dbc.Col([html.Div('Harvest Stage')], width=3, align='center'),
@@ -402,32 +424,40 @@ app.layout = html.Div([
 @app.callback(
     Output('CropUptakeGraph','figure'),
     Input('Location','value'),
-    Input('Crop','value'),
-    Input('ExpectedYield','value'),
+    Input('CurrentCrop','value'),
+    Input('CCSaleableYield','value'),
+    Input('CCUnits','value'),
+    Input('CCFieldLoss','value'),
+    Input('CCDressingLoss','value'),
+    Input('CCMoistureContent','value'),
     Input('EstablishDate','date'),
     Input('HarvestDate','date'),
     Input('EstablishStage','value'),
     Input('HarvestStage','value'))
-def update_Cropgraph(Location,Crop,ExpectedYield,EstablishDate,HarvestDate,EstablishStage,HarvestStage):
+def update_Cropgraph(Location,Crop,CCSaleableYield,CCUnits,CCFieldLoss,CCDressingLoss,CCMoistureContent,
+                     EstablishDate,HarvestDate,EstablishStage,HarvestStage):
     EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
     HarvestDate = dt.datetime.strptime(str(HarvestDate).split('T')[0],'%Y-%m-%d')
+    UnitConverter = Units.loc[CCUnits,'toKG/ha']
     EndYearDate  = EstablishDate + dt.timedelta(days = 365)
-    Tt = DeriveMedianTt(Location,EstablishDate,HarvestDate)
-    Data = DeriveCropUptake(Tt,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,ExpectedYield)
-    fig = px.line(x=Data.index, y=Data.Values,color_discrete_sequence=['green'],range_x = [EstablishDate,EndYearDate])
+    Tt = DeriveMedianTt(Location,EstablishDate)
+    Data = DeriveCropUptake(Tt,EstablishDate,HarvestDate,EstablishStage,HarvestStage,Crop,
+                            CCSaleableYield,CCFieldLoss,CCDressingLoss,CCMoistureContent,UnitConverter)
+    fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],range_x = [EstablishDate,EndYearDate])
     return fig
     
-# @app.callback(
-#     Output('SoilMineralisation','figure),
-#     Input('Location','value'),
-#     Input('EstablishDate','date'),
-#     Input('HWEON','value'),
-#     Input('PreviousCrop','value')
-#     Input('PreviousCropYield','value')       
-#     Input('ResidueTreatment','value')
-# def update_MineralisationGraph(Location,EstablishmentDate,HWEON,PreviousCrop,PreviousCropYield,
-
-# )    
+@app.callback(
+    Output('SoilMineralisation','figure),
+    Input('Location','value'),
+    Input('EstablishDate','date'),
+    Input('HWEON','value'),
+    Input('PreviousCrop','value')
+    Input('PreviousCropYield','value')       
+    Input('ResidueTreatment','value'))
+def update_MineralisationGraph(Location,EstablishDate,HWEON,PreviousCrop,PreviousCropYield,
+    EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
+    Tt = DeriveMedianTt(Location,EstablishDate)
+    StartResidue = 
     
 # Run app and display result inline in the notebook
-app.run_server(mode='external')
+app.run_server(mode='External')
