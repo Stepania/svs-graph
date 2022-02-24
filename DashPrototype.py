@@ -73,7 +73,7 @@ ResidueTreatmentsDropdown = [{'label':i,'value':i} for i in ResidueTreatments.in
 
 CropConfigs = ["Crop","SaleableYield","Units","FieldLoss","DressingLoss","MoistureContent",
                "EstablishDate","EstablishStage","HarvestDate","HarvestStage","ResidueTreatment",
-               "RootN","StoverN","ResidueN"]
+               "RootN","StoverN","FieldLossN"]
 
 def setCropConfigDefaults(data):
      return pd.Series(index = CropConfigs,data = data)
@@ -194,7 +194,7 @@ def DeriveMedianTt(Loc,StartDate,EndDate):
     return TTmed
 
 def DeriveCropUptake(TTmed,cropConfigs):
-    CropN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),columns=['Values'])
+    CropN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','FieldLoss','TotalCrop'],TTmed.index],names=['Component','Date']),columns=['Values'])
     for c in cropConfigs:
         ## Calculate model parameters 
         EstablishDate = c["EstablishDate"]
@@ -218,50 +218,45 @@ def DeriveCropUptake(TTmed,cropConfigs):
         TotalProductN = DryProductWt * CropCoefficients.loc[Crop,'Nconc_Tops']/100
         c['StoverN'] = DryStoverWt * CropCoefficients.loc[Crop,'Nconc_Stover']/100
         c['RootN'] = DryRootWt * CropCoefficients.loc[Crop,'Nconc_Roots']/100
-        c['ResidueN'] = (TotalProductN * c["FieldLoss"]/100)
+        c['FieldLossN'] = (TotalProductN * c["FieldLoss"]/100)
         TotalCropN = c['RootN'] + c['StoverN'] + TotalProductN
         #CropN.loc[[('Root',d) for d in TTmed[EstablishDate:HarvestDate].index],0]
         dates = TTmed[EstablishDate:HarvestDate].index
         CropN.loc[[('Root',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN'])
         CropN.loc[[('Stover',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN']+c['StoverN'])
-        CropN.loc[[('Residue',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN'] + c['StoverN'] + c['ResidueN'])
-        CropN.loc[[('Total',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), TotalCropN)
+        CropN.loc[[('FieldLoss',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN'] + c['StoverN'] + c['FieldLossN'])
+        CropN.loc[[('TotalCrop',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), TotalCropN)
     return CropN.reset_index()
 
 def ResiduePatterns(TTmed,cropConfigs):
-    ResidualN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),
-                             columns=['Values'],data = [0.0]*TTmed.index.size*4)
-    DeltaRootN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
-    DeltaStoverN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
-    DeltaResidueN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
+    ResidualN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','FieldLoss'],TTmed.index],names=['Component','Date']),
+                             columns=['Values'],data = [0.0]*TTmed.index.size*3)
     p = 0.1
     for d in TTmed.index[1:]:
         yesterday = d-dt.timedelta(days=1) 
         ResidualN.loc[('Root',d),'Values'] = ResidualN.loc[('Root',yesterday),'Values']
         ResidualN.loc[('Stover',d),'Values'] = ResidualN.loc[('Stover',yesterday),'Values']
-        ResidualN.loc[('Residue',d),'Values'] = ResidualN.loc[('Residue',yesterday),'Values']
+        ResidualN.loc[('FieldLoss',d),'Values'] = ResidualN.loc[('FieldLoss',yesterday),'Values']
         DeltaRootN[d] = ResidualN.loc[('Root',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
         DeltaStoverN[d] = ResidualN.loc[('Stover',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
-        DeltaResidueN[d] = ResidualN.loc[('Residue',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
+        DeltaFieldLossN[d] = ResidualN.loc[('FieldLoss',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
         ResidualN.loc[('Root',d),'Values'] -= DeltaRootN[d]
         ResidualN.loc[('Stover',d),'Values'] -= DeltaStoverN[d]
-        ResidualN.loc[('Residue',d),'Values'] -= DeltaResidueN[d]
+        ResidualN.loc[('FieldLoss',d),'Values'] -= DeltaFieldLossN[d]
         for c in cropConfigs:
             if d == (c["HarvestDate"] + dt.timedelta(days=7)):
                 ResidualN.loc[('Root',d),'Values'] += c['RootN']
                 ResidualN.loc[('Stover',d),'Values'] += c['StoverN']
-                ResidualN.loc[('Residue',d),'Values'] += c['ResidueN']
-        ResidualN.loc[('Total',d),'Values'] = ResidualN.loc[('Root',d),'Values'] + ResidualN.loc[('Stover',d),'Values'] + ResidualN.loc[('Residue',d),'Values']
+                ResidualN.loc[('FieldLoss',d),'Values'] += c['FieldLossN']
+    ResidualN.loc['Stover','Values'] = (ResidualN.loc['Root','Values'] + ResidualN.loc['Stover','Values']).values
+    ResidualN.loc['FieldLoss','Values'] = (ResidualN.loc['Stover','Values'] + ResidualN.loc['FieldLoss','Values']).values
     return ResidualN.reset_index()
 
-# def MineralisationGraph(TTmed,EstablishDate,HWEON):
-#     MineralisedN = pd.DataFrame(index = pd.MultiIndex.from_product([['SOM','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),
-#                              columns=['Values'],data = [0.0]*TTmed.index.size*4)
-#     p = 0.1
-#     for d in TTmed.index:
-#         MineralisedN.loc[('SOM',d),'Values'] =  HWEON * (TTmed[d] - TTmed[yesterday])* p
-#     MineralisedN.loc['Residue','Values'] = 
-#     return MineralisedN.reset_index()
+def SOMRates(TTmed,HWEON):
+    p = 0.1
+    for d in TTmed.index[1:]:
+        yesterday = d - dt.timedelta(days=1)
+        DeltaSOMN[d] =  HWEON * (TTmed[d] - TTmed[yesterday])* p
 
     
 def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,FinalN,TotalCropN,splits,Eff):
@@ -298,11 +293,11 @@ def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,Fi
     # Calculate fitted patterns
     CropPatterns = pd.DataFrame(TTmed+Tt_estab)
     CropPatterns.loc[:,'biomass'] = CalcBiomass(CropPatterns.Tt.values,Xo_Biomass,b_Biomass) * 1/(StagePropns.loc[HarvestStage,'PrpnMaxDM']) * TotalCropN
-    CropPatterns.loc[:,'residue'] = CropPatterns.Tt.values * r
+    CropPatterns.loc[:,'FieldLoss'] = CropPatterns.Tt.values * r
     CropPatterns.loc[:,'mineralisation'] = CropPatterns.Tt.values * m
     CropPatterns.loc[:,'mineral'] = InitialN
     CropPatterns = CropPatterns.iloc[:duration,:]
-    NFertReq = (CropPatterns.loc[:,'biomass'].max() + FinalN) - InitialN - CropPatterns.loc[:,'mineralisation'].max() - CropPatterns.loc[:,'residue'].max()
+    NFertReq = (CropPatterns.loc[:,'biomass'].max() + FinalN) - InitialN - CropPatterns.loc[:,'mineralisation'].max() - CropPatterns.loc[:,'FieldLoss'].max()
     NFertReq = NFertReq * 1/Eff
     NFertReq = np.ceil(NFertReq)
     NAppn = NFertReq/splits
@@ -346,41 +341,57 @@ def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,Fi
     return CropPatterns
 
 
+# -
+
+    MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['SOM','Residue'],Tt[CurrentConfig['EstablishDate']:].index],
+                                      names=['Component','Date']),columns=['Values'])
+    MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values
+    MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
+    SOMRates(Tt,FieldConfig['HWEON'])
+    MineralisationData.reset_index(inplace=True)
+    px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
+                  range_x = [GraphStart,EndYearDate])
+
+DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
+
+SOMRates(Tt,17)
+
+pd.MultiIndex.from_product([['Residue','SOM'],Tt.index])
+
+    MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['Residue','SOM'],Tt[CurrentConfig['EstablishDate']:].index],
+                                      names=['Component','Date']),columns=['Values'])
+    MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values                                  
+    MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values + MineralisationData.loc['Residue','Values'].values
+
+MineralisationData.reset_index()
+
+test2 = test.loc[test.Component=='FieldLoss'].copy()
+
+test2.loc[:,'Component'] = 'Residue'
+
+(DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values
+
+
 # +
-# Iris bar figure
-def drawFigure():
-    return  html.Div([
-        dbc.Card(
-            dbc.CardBody([
-                dcc.Graph(
-                    figure=px.bar(
-                        df, x="sepal_width", y="sepal_length", color="species"
-                    ).update_layout(
-                        template='plotly_dark',
-                        plot_bgcolor= 'rgba(0, 0, 0, 0)',
-                        paper_bgcolor= 'rgba(0, 0, 0, 0)',
-                    ),
-                    config={
-                        'displayModeBar': False
-                    }
-                ) 
-            ])
-        ),  
-    ])
-
-# Data
-df = px.data.iris()
-
 def CropGraph():
-    CropData = DeriveCropUptake(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
+    LiveData = DeriveCropUptake(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
     ResidueData = ResiduePatterns(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
-    Data = pd.concat([CropData,ResidueData],keys=['Live','Residue'],names=['Crop','ind']).reset_index()
-    GraphStart =PriorConfig["HarvestDate"] - dt.timedelta(days=14)
-    EndYearDate = CurrentConfig["EstablishDate"] + dt.timedelta(days=356)
-    fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],
-                  line_dash='Crop', line_dash_sequence=['solid','dot'], range_x = [GraphStart,EndYearDate])
+    CropData = pd.concat([LiveData,ResidueData],keys=['Live','Residue'],names=['Status','ind']).reset_index()
+    fig = px.line(data_frame=CropData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','orange','red','green'],
+                  line_dash='Status', line_dash_sequence=['solid','dot'], range_x = [GraphStart,EndYearDate])
     return fig
 
+def MineralisationGraph():
+    MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['SOM','Residue'],Tt[CurrentConfig['EstablishDate']:].index],
+                                      names=['Component','Date']),columns=['Values'])
+    MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values
+    MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
+    SOMRates(Tt,FieldConfig['HWEON'])
+    MineralisationData.reset_index(inplace=True)
+    fig px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
+                  range_x = [GraphStart,EndYearDate])
+    return fig
+    
 # Build App
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
 
@@ -388,7 +399,13 @@ defaultLoc = 'Lincoln'
 defaultStartDate = PriorConfig["EstablishDate"]
 defaultEndDate = FollowingConfig["HarvestDate"] + dt.timedelta(days=7)
 Tt = DeriveMedianTt(defaultLoc,defaultStartDate,defaultEndDate)
-
+DeltaRootN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaStoverN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaFieldLossN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
+GraphStart = PriorConfig["HarvestDate"] - dt.timedelta(days=14)
+EndYearDate = CurrentConfig["EstablishDate"] + dt.timedelta(days=356)
+    
 def CropInputs(pos):
     CropConfig = globals()[pos+"Config"]
     return dbc.CardBody([
@@ -500,23 +517,22 @@ app.layout = html.Div([
     Output('TtGraph','figure'),
     Input('Location','value'),
     Input('PriorEstablishDate','date'),
-    Input('FollowingHarvestDate','date'))
-def update_Tt(Location,PriorEstablishDate,FollowingHarvestDate):
+    Input('PriorHarvestDate','date'),
+    Input('CurrentEstablishDate','date'),
+    Input('FollowingHarvestDate','date'),
+    )
+def update_Tt(Location,PriorEstablishDate,PriorHarvestDate,CurrentEstablishDate,FollowingHarvestDate):
     StartDate = dt.datetime.strptime(str(PriorEstablishDate).split('T')[0],'%Y-%m-%d') 
     EndDate = dt.datetime.strptime(str(FollowingHarvestDate).split('T')[0],'%Y-%m-%d') + dt.timedelta(days=7)
+    GraphStart = dt.datetime.strptime(str(PriorHarvestDate).split('T')[0],'%Y-%m-%d') - dt.timedelta(days=14)
+    EndYearDate = dt.datetime.strptime(str(CurrentEstablishDate).split('T')[0],'%Y-%m-%d') + dt.timedelta(days=356)
     Tt = DeriveMedianTt(Location,StartDate,EndDate)
+    DeltaRootN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+    DeltaStoverN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+    DeltaFieldLossN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+    DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
     fig = px.line(x=Tt.index,y=Tt.values)
     return fig
-
-# @app.callback(
-#     #Output('TtGraph','figure'),
-#     Output('CropUptakeGraph','figure')
-#     Input('RefreshButton','n_clicks'))
-# def UpdateGraphs(RefreshButton):
-#     return CropGraph()
-    
-# )
-
 
 @app.callback(Output("StateLocation",'children'),Input("Location",'value'))
 def StateLocation(Location):
@@ -668,55 +684,13 @@ def StateFollowingCrop(FollowingResidueTreatment):
 
 @app.callback(
     Output('CropUptakeGraph','figure'),
+    Output('SoilMineralisation','figure'),
     Input('RefreshButton','n_clicks'))
 def RefreshGraphs(n_clicks):
-    return CropGraph()
+    return CropGraph(), MineralisationGraph()
 
-# @app.callback(
-#     Output('CropUptakeGraph','figure'),
-#     Input('Location','value'),
-#     Input('CurrentCrop','value'),
-#     Input('CurrentSaleableYield','value'),
-#     Input('CurrentUnits','value'),
-#     Input('CurrentFieldLoss','value'),
-#     Input('CurrentDressingLoss','value'),
-#     Input('CurrentMoistureContent','value'),
-#     Input('CurrentEstablishDate','date'),
-#     Input('CurrentHarvestDate','date'),
-#     Input('CurrentEstablishStage','value'),
-#     Input('CurrentHarvestStage','value'),
-#     Input('CurrentResidueTreatment','value'))
-# def update_Cropgraph(Location,CurrentCrop,CurrentSaleableYield,CurrentUnits,CurrentFieldLoss,CurrentDressingLoss,
-#                      CurrentMoistureContent,CurrentEstablishDate,CurrentHarvestDate,CurrentEstablishStage,
-#                      CurrentHarvestStage,CurrentResidueTreatment):
-#     CurrentConfig["Crop"] = CurrentCrop
-#     CurrentConfig["SaleableYeild"] = CurrentSaleableYield
-#     CurrentConfig["Units"]=CurrentUnits
-#     CurrentConfig["FieldLoss"]=CurrentFieldLoss
-#     CurrentConfig["DressingLoss"]=CurrentDressingLoss
-#     CurrentConfig["MoistureContent"]=CurrentMoistureContent
-#     CurrentConfig["EstablishDate"]= dt.datetime.strptime(str(CurrentEstablishDate).split('T')[0],'%Y-%m-%d')
-#     CurrentConfig["HarvestDate"]= dt.datetime.strptime(str(CurrentHarvestDate).split('T')[0],'%Y-%m-%d')    
-#     CurrentConfig["EstablishStage"]=CurrentEstablishStage
-#     CurrentConfig["HarvestStage"]=CurrentHarvestStage
-#     CurrentConfig["ResidueTreatment"]=CurrentResidueTreatment
-#     return CropGraph()
-    
-# @app.callback(
-#     Output('SoilMineralisation','figure),
-#     Input('Location','value'),
-#     Input('EstablishDate','date'),
-#     Input('HWEON','value'),
-#     Input('PreviousCrop','value')
-#     Input('PreviousCropYield','value')       
-#     Input('ResidueTreatment','value'))
-# def update_MineralisationGraph(Location,EstablishDate,HWEON,PreviousCrop,PreviousCropYield,
-#     EstablishDate = dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')
-#     Tt = DeriveMedianTt(Location,EstablishDate)
-#     StartResidue = 
-    
 # Run app and display result inline in the notebook
 app.run_server(mode='External')
 # -
 
-FieldConfig
+Tt
