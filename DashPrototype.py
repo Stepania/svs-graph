@@ -32,6 +32,8 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 # %matplotlib inline
 
+# ## General components
+
 # +
 # Data extracted from CropData.cs InitialiseCropData() method
 CropCoefficients = pd.read_excel('C:\\GitHubRepos\\Overseer-testing\\CropCoefficients\\CropCoefficients.xlsx')
@@ -70,6 +72,9 @@ ResidueTreatments = pd.DataFrame(index = ['Incorporated','Left on Surface','Bale
                                  data = [0,0,80,50,90],
                                  columns = ['%returned'])
 ResidueTreatmentsDropdown = [{'label':i,'value':i} for i in ResidueTreatments.index]
+# -
+
+# ## Core crop model components
 
 # +
 BiomassScaller = []
@@ -112,6 +117,10 @@ plt.xlabel('Temperature accumulation')
 EstablishStageDropdown = [{'label':i,'value':i} for i in Methods[:2]]
 HarvestStageDropdown = [{'label':i,'value':i} for i in Methods[2:]]
 
+
+# -
+
+# ## Model Functions
 
 # +
 def CalculateMedianTt():
@@ -243,7 +252,7 @@ PriorConfig = setCropConfigDefaults(["Wheatautumn",16000,"kg/ha",5,0,0,dt.dateti
 CurrentConfig = setCropConfigDefaults(["Potatolong",70,"t/ha",10,5,77,dt.datetime.strptime('15-10-2020','%d-%m-%Y'),
                                        "Seed",dt.datetime.strptime('10-3-2021','%d-%m-%Y'),"Maturity",
                                        "Incorporated",0,0,0,0,0])
-FollowingConfig = setCropConfigDefaults(["Wheatautumn",12,"t/ha",5,5,15,dt.datetime.strptime('01-04-2021','%d-%m-%Y'),
+FollowingConfig = setCropConfigDefaults(["Wheatautumn",12,"t/ha",5,5,15,dt.datetime.strptime('15-06-2021','%d-%m-%Y'),
                                          "Seed",dt.datetime.strptime('10-2-2022','%d-%m-%Y'),"Maturity",
                                          "Incorporated",0,0,0,0,0])
 FieldConfig = pd.Series(index = ['Location','HWEON','MineralN'],data=['Lincoln',17,19])
@@ -263,6 +272,10 @@ ResidualN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','F
                              columns=['Values'],data = [0.0]*Tt.index.size*3)
 SoilN = pd.Series(index = Tt.index, data=[np.nan]*Tt.index.size)
 
+
+# -
+
+# ## Graph constructors
 
 # +
 def ResizeDataFrames(Location,PriorEstablishDate,PriorHarvestDate,CurrentEstablishDate,FollowingHarvestDate):
@@ -289,6 +302,10 @@ def CropGraph():
     CropData = pd.concat([LiveData,ResidueData],keys=['Live','Residue'],names=['Status','ind']).reset_index()
     fig = px.line(data_frame=CropData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','orange','red','green'],
                   line_dash='Status', line_dash_sequence=['solid','dot'], range_x = [GraphStart,EndYearDate])
+    fig.update_layout(title_text="Crop and Residue N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
+    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
+    fig.update_xaxes(title_text=None)
+
     return fig
 
 def MineralisationGraph():
@@ -299,52 +316,60 @@ def MineralisationGraph():
     MineralisationData.reset_index(inplace=True)
     fig = px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
                   range_x = [GraphStart,EndYearDate])
+    fig.update_layout(title_text="N Mineralisation", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
+    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
+    fig.update_xaxes(title_text=None)
     return fig
 
 def SoilNGraph():
     fig = px.line(x=SoilN.index,y=SoilN.values,color_discrete_sequence=['brown'],
                   range_x = [GraphStart,EndYearDate])
+    fig.update_layout(title_text="Soi Mineral N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
+    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
+    fig.update_xaxes(title_text=None)
     return fig
-    
-    
-# Build App
-app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
-    
+
+
+# -
+
+# ## Crop Configuration and status constructors
+
+# +
 def CropInputs(pos):
     CropConfig = globals()[pos+"Config"]
     return dbc.CardBody([
     dbc.Row([dbc.Col([html.H1(pos+" Crop")], width=6 ,align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"Crop",options = CropDropDown,value=CropConfig["Crop"])], width=6 ,align='center'),]),
-    html.Br(),
+    #html.Br(),
     dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
              dbc.Col([html.Div('Saleable Yield')], width=3, align='center'),
              dbc.Col([dcc.Input(id=pos+"SaleableYield", type="number",value=CropConfig["SaleableYield"],min=0.01)], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"Units", options = UnitsDropDown,value=CropConfig["Units"])], width=3, align='center')]), 
-    html.Br(),
+    # html.Br(),
     dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
              dbc.Col([html.Div('Field Loss (%)')], width=3, align='center'),
              dbc.Col([html.Div('Dressing loss (%)')], width=3, align='center'),
              dbc.Col([html.Div('Moisture (%)')], width=3, align='center')]), 
-    html.Br(),
+    # html.Br(),
     dbc.Row([dbc.Col([html.Div('')], width=3, align='center'),
              dbc.Col([dcc.Input(id=pos+"FieldLoss", type="number",value=CropConfig["FieldLoss"],min=0,max=100)], width=3, align='center'),
              dbc.Col([dcc.Input(id=pos+"DressingLoss", type="number",value=CropConfig["DressingLoss"],min=0,max=100)], width=3, align='center'),
              dbc.Col([dcc.Input(id=pos+"MoistureContent", type="number",value=CropConfig["MoistureContent"],min=0,max=96)], width=3, align='center')]), 
-    html.Br(),
+    # html.Br(),
     dbc.Row([dbc.Col([html.Div('Planting Date')], width=3, align='center'),
              dbc.Col([dcc.DatePickerSingle(id=pos+"EstablishDate", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
                                             date=CropConfig["EstablishDate"],display_format='D-MMM-YYYY')], width=3, align='center'),
              dbc.Col([html.Div('Planting method')], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"EstablishStage",options =EstablishStageDropdown,value=CropConfig["EstablishStage"])], width=3, align='center')]), 
-    html.Br(),
+    # html.Br(),
     dbc.Row([dbc.Col([html.Div('Harvest Date')], width=3, align='center'),
              dbc.Col([dcc.DatePickerSingle(id=pos+"HarvestDate", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
                                             date=CropConfig["HarvestDate"],display_format='D-MMM-YYYY')], width=3, align='center'), 
              dbc.Col([html.Div('Harvest Stage')], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"HarvestStage",options = HarvestStageDropdown,value=CropConfig["HarvestStage"])], width=3, align='center')]), 
-    html.Br(),
+    # html.Br(),
     dbc.Row([dbc.Col([html.Div('ResidueTreatment')], width=3, align='center'), 
             dbc.Col([dcc.Dropdown(id=pos+"ResidueTreatment", options=ResidueTreatmentsDropdown,value=CropConfig["ResidueTreatment"])],width=3, align='center')]), 
     ])
@@ -384,6 +409,14 @@ def CropState(pos):
     ])
 
 
+
+# -
+
+# ## App layout and callbacks
+
+# +
+app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
+
 app.layout = html.Div([
     dbc.Row([dbc.Col(html.H1("Field Location"), width=2 ,align='center'),
              dbc.Col(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln'), width=3 ,align='center')]),
@@ -398,9 +431,14 @@ app.layout = html.Div([
     dbc.Row([dbc.Col(dbc.Card(CropInputs("Prior"))),
              dbc.Col(dbc.Card(CropInputs("Current"))),
              dbc.Col(dbc.Card(CropInputs("Following")))]),
-    dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='SoilMineralisationGraph')),width=4),
-             dbc.Col(dbc.Card(dcc.Graph(id='CropUptakeGraph')),width=4),
-             dbc.Col(dbc.Card(dcc.Graph(id='SoilNGraph')),width=4)]),
+    html.Br(),
+    dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='CropUptakeGraph')),width=4),
+             dbc.Col(dbc.Card(dcc.Graph(id='SoilNGraph')),width=4),
+             dbc.Col(dbc.Card(dcc.Graph(id='SoilMineralisationGraph')),width=4)]),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
     dbc.Row([dbc.Col(dbc.Card(CropState("StatePrior"))),
              dbc.Col(dbc.Card(CropState("StateCurrent"))),
              dbc.Col(dbc.Card(CropState("StateFollowing")))]),
@@ -428,6 +466,7 @@ app.layout = html.Div([
 def update_Tt(Location,PriorEstablishDate,PriorHarvestDate,CurrentEstablishDate,FollowingHarvestDate):
     ResizeDataFrames(Location,PriorEstablishDate,PriorHarvestDate,CurrentEstablishDate,FollowingHarvestDate)
     CalculateMedianTt()
+    CropN.loc[:,'Values'] = np.nan
     CalculateCropUptake()
     CalculateResidueMineralisation()
     CalculateSOMMineralisation()
@@ -590,6 +629,7 @@ def StateFollowingCrop(FollowingResidueTreatment):
     Input('RefreshButton','n_clicks'))
 def RefreshGraphs(n_clicks):
     CalculateMedianTt()
+    CropN.loc[:,'Values'] = np.nan
     CalculateCropUptake()
     CalculateResidueMineralisation()
     CalculateSOMMineralisation()
