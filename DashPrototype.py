@@ -114,46 +114,6 @@ HarvestStageDropdown = [{'label':i,'value':i} for i in Methods[2:]]
 
 
 # +
-def CalcCovers(Tts, A_cov, Xo_cov, b_cov,T_sen,T_mat):
-    Covers = []
-    for tt in Tts:
-        cover = 0
-        if tt < T_sen:
-            cover = A_cov * 1/(1+np.exp(-((tt-Xo_cov)/b_cov)))
-        else:
-            if tt < T_mat:
-                cover = A_cov * (1-(tt-T_sen)/(T_mat-T_sen))
-        Covers.append(cover)
-    return Covers
-
-def CalcBiomass(Tts,Xo_Biomass,b_Biomass):
-    BiomassScaller = []
-    for tt in Tts:
-        BiomassScaller.append(1/(1+np.exp(-((tt-Xo_Biomass)/(b_Biomass)))))
-    return BiomassScaller    
-
-def NDilution(An,Bn,c,R):
-    return An * (1 + Bn * np.exp(c*R))
-
-def MakeDate(DateString,CheckDate):
-    Date = dt.datetime(2000,int(dt.datetime.strptime(DateString.split('-')[1],'%b').month),int(DateString.split('-')[0]))
-    if CheckDate == '':
-        CheckDate = dt.datetime(2000,1,1)
-    if Date < CheckDate:
-        Date = dt.datetime(2001,int(dt.datetime.strptime(DateString.split('-')[1],'%b').month),int(DateString.split('-')[0]))
-    return Date
-
-
-
-def firstIndex(series,threshold):
-    pos=0
-    passed = False
-    while passed == False:
-        if series.iloc[pos] < threshold:
-            passed = True
-        pos +=1
-    return pos
-
 def DeriveMedianTt(Loc,StartDate,EndDate):
     ## Calculate median thermaltime for location
     duration = (EndDate-StartDate).days
@@ -354,21 +314,6 @@ DeltaRootN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
 DeltaStoverN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
 DeltaFieldLossN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
 DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
-# -
-
-DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum()
-
-(DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum()
-
-    MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['SOM','Residue'],Tt[CurrentConfig['EstablishDate']:].index],
-                                      names=['Component','Date']),columns=['Values'])
-    MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values
-    MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
-    SOMRates(Tt,FieldConfig['HWEON'])
-    MineralisationData.reset_index(inplace=True)
-    fig = px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
-                  range_x = [GraphStart,EndYearDate])
-    fig
 
 
 # +
@@ -383,9 +328,9 @@ def CropGraph():
 def MineralisationGraph():
     MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['SOM','Residue'],Tt[CurrentConfig['EstablishDate']:].index],
                                       names=['Component','Date']),columns=['Values'])
+    SOMRates(Tt,FieldConfig['HWEON'])
     MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values
     MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
-    SOMRates(Tt,FieldConfig['HWEON'])
     MineralisationData.reset_index(inplace=True)
     fig = px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
                   range_x = [GraphStart,EndYearDate])
