@@ -87,6 +87,7 @@ CurrentConfig = setCropConfigDefaults(["Potatolong",70,"t/ha",10,5,77,dt.datetim
 FollowingConfig = setCropConfigDefaults(["Wheatautumn",12,"t/ha",5,5,15,dt.datetime.strptime('01-04-2021','%d-%m-%Y'),
                                          "Seed",dt.datetime.strptime('10-2-2022','%d-%m-%Y'),"Maturity",
                                          "Incorporated",0,0,0])
+FieldConfig = pd.Series(index = ['Location','HWEON','MineralN'],data=['Lincoln',17,19])
 
 # +
 BiomassScaller = []
@@ -193,7 +194,7 @@ def DeriveMedianTt(Loc,StartDate,EndDate):
     return TTmed
 
 def DeriveCropUptake(TTmed,cropConfigs):
-    CropN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],Tt.index],names=['Nitrogen','Date']),columns=['Values'])
+    CropN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),columns=['Values'])
     for c in cropConfigs:
         ## Calculate model parameters 
         EstablishDate = c["EstablishDate"]
@@ -228,52 +229,39 @@ def DeriveCropUptake(TTmed,cropConfigs):
     return CropN.reset_index()
 
 def ResiduePatterns(TTmed,cropConfigs):
-    RootN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
-    StoverN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
-    ResidueN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
-    TotalN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
+    ResidualN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),
+                             columns=['Values'],data = [0.0]*TTmed.index.size*4)
     DeltaRootN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
     DeltaStoverN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
     DeltaResidueN = pd.Series(index=TTmed.index,data=[0.0]*TTmed.index.size)
     p = 0.1
     for d in TTmed.index[1:]:
         yesterday = d-dt.timedelta(days=1) 
-        RootN[d] = RootN[yesterday]
-        StoverN[d] = StoverN[yesterday]
-        ResidueN[d] = ResidueN[yesterday]
-        DeltaRootN[d] = RootN[d] * (TTmed[d] - TTmed[yesterday])* p
-        DeltaStoverN[d] = StoverN[d] * (TTmed[d] - TTmed[yesterday])* p
-        DeltaResidueN[d] = ResidueN[d] * (TTmed[d] - TTmed[yesterday])* p
-        RootN[d] -= DeltaRootN[d]
-        StoverN[d] -= DeltaStoverN[d]
-        ResidueN[d] -= DeltaResidueN[d]
+        ResidualN.loc[('Root',d),'Values'] = ResidualN.loc[('Root',yesterday),'Values']
+        ResidualN.loc[('Stover',d),'Values'] = ResidualN.loc[('Stover',yesterday),'Values']
+        ResidualN.loc[('Residue',d),'Values'] = ResidualN.loc[('Residue',yesterday),'Values']
+        DeltaRootN[d] = ResidualN.loc[('Root',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
+        DeltaStoverN[d] = ResidualN.loc[('Stover',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
+        DeltaResidueN[d] = ResidualN.loc[('Residue',d),'Values'] * (TTmed[d] - TTmed[yesterday])* p
+        ResidualN.loc[('Root',d),'Values'] -= DeltaRootN[d]
+        ResidualN.loc[('Stover',d),'Values'] -= DeltaStoverN[d]
+        ResidualN.loc[('Residue',d),'Values'] -= DeltaResidueN[d]
         for c in cropConfigs:
-            if d == c["HarvestDate"]:
-                RootN[d] += c['RootN']
-                StoverN[d] += c['StoverN']
-                ResidueN[d] += c['ResidueN']
-        TotalN[d] = RootN[d] + StoverN[d] + ResidueN[d]
-    Root = pd.concat([RootN],axis=0,keys=['Root'],names=['Nitrogen'])
-    Stover = pd.concat([StoverN],axis=0,keys=['Stover'],names=['Nitrogen']) + Root
-    Residue = pd.concat([ResidueN],axis=0,keys=['Residue'],names=['Nitrogen']) + Root + Stover
-    Total = pd.concat([TotalN],axis=0,keys=['Total'],names=['Nitrogen'])
-    return Total.reset_index()
+            if d == (c["HarvestDate"] + dt.timedelta(days=7)):
+                ResidualN.loc[('Root',d),'Values'] += c['RootN']
+                ResidualN.loc[('Stover',d),'Values'] += c['StoverN']
+                ResidualN.loc[('Residue',d),'Values'] += c['ResidueN']
+        ResidualN.loc[('Total',d),'Values'] = ResidualN.loc[('Root',d),'Values'] + ResidualN.loc[('Stover',d),'Values'] + ResidualN.loc[('Residue',d),'Values']
+    return ResidualN.reset_index()
 
-def MineralisationGraph(TTmed,EstablishDate,HWEON):
-    ## Calculate date variables
-    EstabDate = MakeDate(Establish,'')
-    HarvestDate = MakeDate(Harvest,EstabDate)
-    Tt_Harv = TTmed[HarvestDate]
-    Tt_estab = Tt_Harv * (StagePropns.loc[EstablishStage,'PrpnTt']/StagePropns.loc[HarvestStage,'PrpnTt'])
-    CropPatterns = pd.DataFrame(TTmed+Tt_estab)
-    CropPatterns.loc[:,'biomass'] = CropPatterns.Tt.values * p
-    plt.plot(CropPatterns.index,CropPatterns.biomass,color=col)
-    #plt.plot(CropPatterns.index,CropPatterns.nitrogen)
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-    plt.xlim(EstabDate,HarvestDate)
-    return CropPatterns.loc[:HarvestDate,'biomass'].max()
-    #plt.ylim(0,1.1)
+# def MineralisationGraph(TTmed,EstablishDate,HWEON):
+#     MineralisedN = pd.DataFrame(index = pd.MultiIndex.from_product([['SOM','Residue','Total'],TTmed.index],names=['Nitrogen','Date']),
+#                              columns=['Values'],data = [0.0]*TTmed.index.size*4)
+#     p = 0.1
+#     for d in TTmed.index:
+#         MineralisedN.loc[('SOM',d),'Values'] =  HWEON * (TTmed[d] - TTmed[yesterday])* p
+#     MineralisedN.loc['Residue','Values'] = 
+#     return MineralisedN.reset_index()
 
     
 def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,FinalN,TotalCropN,splits,Eff):
@@ -358,67 +346,6 @@ def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,Fi
     return CropPatterns
 
 
-# -
-
-pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],dates],names=['Nitrogen','Date'])
-
-
-
-TTmed = Tt
-CropN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','Residue','Total'],Tt.index],names=['Nitrogen','Date']),columns=['Values'])
-for c in cropConfigs:
-    ## Calculate model parameters 
-    EstablishDate = c["EstablishDate"]
-    HarvestDate = c["HarvestDate"]
-    Crop = c["Crop"] 
-    CropTt = TTmed[EstablishDate:HarvestDate] - TTmed[EstablishDate] 
-    Tt_Harv = TTmed[HarvestDate] - TTmed[EstablishDate] 
-    Tt_estab = Tt_Harv * (StagePropns.loc[c["EstablishStage"],'PrpnTt']/StagePropns.loc[c["HarvestStage"],'PrpnTt'])
-    Xo_Biomass = (Tt_Harv + Tt_estab) *.5 * (1/StagePropns.loc[c["HarvestStage"],'PrpnTt'])
-    b_Biomass = Xo_Biomass * .2
-    # Calculate fitted patterns
-    BiomassScaller = []
-    for tt in CropTt:
-        BiomassScaller.append(1/(1+np.exp(-((tt-Xo_Biomass)/(b_Biomass)))))
-    UnitConverter = Units.loc[c["Units"],'toKG/ha']
-    FreshProductWt = c["SaleableYield"] * (1 + c["FieldLoss"]/100) * (1 + c["DressingLoss"]/100)
-    DryProductWt = FreshProductWt * UnitConverter * (1-c["MoistureContent"]/100)
-    HI = CropCoefficients.loc[Crop,'a_Harvest'] + c["SaleableYield"] * UnitConverter * CropCoefficients.loc[Crop,'b_harvest']
-    DryStoverWt = DryProductWt * 1/HI - DryProductWt 
-    DryRootWt = (DryStoverWt+DryProductWt) * CropCoefficients.loc[Crop,'p_Root']
-    TotalProductN = DryProductWt * CropCoefficients.loc[Crop,'Nconc_Tops']/100
-    c['StoverN'] = DryStoverWt * CropCoefficients.loc[Crop,'Nconc_Stover']/100
-    c['RootN'] = DryRootWt * CropCoefficients.loc[Crop,'Nconc_Roots']/100
-    c['ResidueN'] = (TotalProductN * c["FieldLoss"]/100)
-    TotalCropN = c['RootN'] + c['StoverN'] + TotalProductN
-    #CropN.loc[[('Root',d) for d in TTmed[EstablishDate:HarvestDate].index],0]
-    dates = TTmed[EstablishDate:HarvestDate].index
-    CropN.loc[[('Root',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN'])
-    CropN.loc[[('Stover',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN']+c['StoverN'])
-    CropN.loc[[('Residue',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), c['RootN'] + c['StoverN'] + c['ResidueN'])
-    CropN.loc[[('Total',d) for d in TTmed[dates].index],'Values'] = np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), TotalCropN)
-
-np.multiply(np.multiply(BiomassScaller , 1/(StagePropns.loc[c["HarvestStage"],'PrpnMaxDM'])), TotalCropN)
-
-test.loc[0,:]
-
-test = DeriveCropUptake(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
-test.sort_index(inplace=True)
-
-test = ResiduePatterns(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
-test.sort_index(inplace=True)
-
-test
-
-test
-
-px.line(data_frame=test,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','yellow','red','green'])
-
-px.line(data_frame=Data,x='Tt',y='Values',color='Nitrogen',color_discrete_sequence=['brown','yellow','red','green'],range_x = [EstablishDate,EndYearDate])
-
-(defaultHarv - defaultSow).days
-
-
 # +
 # Iris bar figure
 def drawFigure():
@@ -445,10 +372,13 @@ def drawFigure():
 df = px.data.iris()
 
 def CropGraph():
-    Data = DeriveCropUptake(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
+    CropData = DeriveCropUptake(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
+    ResidueData = ResiduePatterns(Tt,[PriorConfig,CurrentConfig,FollowingConfig])
+    Data = pd.concat([CropData,ResidueData],keys=['Live','Residue'],names=['Crop','ind']).reset_index()
     GraphStart =PriorConfig["HarvestDate"] - dt.timedelta(days=14)
     EndYearDate = CurrentConfig["EstablishDate"] + dt.timedelta(days=356)
-    fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],range_x = [GraphStart,EndYearDate])
+    fig = px.line(data_frame=Data,x='Date',y='Values',color='Nitrogen',color_discrete_sequence=['brown','orange','red','green'],
+                  line_dash='Crop', line_dash_sequence=['solid','dot'], range_x = [GraphStart,EndYearDate])
     return fig
 
 # Build App
@@ -498,10 +428,45 @@ def CropInputs(pos):
             dbc.Col([dcc.Dropdown(id=pos+"ResidueTreatment", options=ResidueTreatmentsDropdown,value=CropConfig["ResidueTreatment"])],width=3, align='center')]), 
     ])
 
+def CropState(pos):
+    return dbc.CardBody([
+    dbc.Row([dbc.Col([html.H1(pos+" Crop")], width=6 ,align='center'),
+             dbc.Col(html.Div(id=pos+"Crop",children=""), width=6 ,align='center')]),
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div(''), width=3, align='center'),
+             dbc.Col(html.Div('Saleable Yield'), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"SaleableYield", children=""), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"Units",children=""), width=3, align='center')]), 
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div(''), width=3, align='center'),
+             dbc.Col(html.Div('Field Loss (%)'), width=3, align='center'),
+             dbc.Col(html.Div('Dressing loss (%)'), width=3, align='center'),
+             dbc.Col(html.Div('Moisture (%)'), width=3, align='center')]), 
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div(''), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"FieldLoss", children=""), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"DressingLoss", children=""), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"MoistureContent", children=""), width=3, align='center')]), 
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div('Planting Date'), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"EstablishDate", children=""), width=3, align='center'),
+             dbc.Col(html.Div('Planting method'), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"EstablishStage",children=""), width=3, align='center')]), 
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div('Harvest Date'), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"HarvestDate",children=""), width=3, align='center'), 
+             dbc.Col(html.Div('Harvest Stage'), width=3, align='center'),
+             dbc.Col(html.Div(id=pos+"HarvestStage",children=""), width=3, align='center')]), 
+    html.Br(),
+    dbc.Row([dbc.Col(html.Div('ResidueTreatment'), width=3, align='center'), 
+             dbc.Col(html.Div(id=pos+"ResidueTreatment", children=""),width=3, align='center')]), 
+    ])
+
+
 app.layout = html.Div([
     dbc.Row([dbc.Col(html.H1("Field Location"), width=2 ,align='center'),
              dbc.Col(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln'), width=3 ,align='center')]),
-    dbc.Row([dbc.Col(html.Div(""),width=2,align='center'),
+    dbc.Row([dbc.Col(html.Button("Refresh",id="RefreshButton"),width=2,align='center'),
              dbc.Col(html.H1("Current Soil Tests"), width=2 ,align='center'),
              dbc.Col(html.Div('HWEON'),width=1,align='center'),
              dbc.Col(dcc.Input(id="HWEON",type="number",value = 17,min=0),width=1, align='center'),
@@ -515,9 +480,22 @@ app.layout = html.Div([
     dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='SoilMineralisation')),width=4),
              dbc.Col(dbc.Card(dcc.Graph(id='CropUptakeGraph')),width=4),
              dbc.Col(dbc.Card(dcc.Graph(id='SoilN')),width=4)]),
+    dbc.Row([dbc.Col(dbc.Card(CropState("StatePrior"))),
+             dbc.Col(dbc.Card(CropState("StateCurrent"))),
+             dbc.Col(dbc.Card(CropState("StateFollowing")))]),
+    dbc.Row([dbc.Col(html.H1("Field Location"), width=2 ,align='center'),
+             dbc.Col(html.Div(id="StateLocation",children =""), width=3 ,align='center')]),
+    dbc.Row([dbc.Col(html.Div(""),width=2,align='center'),
+             dbc.Col(html.H1("Current Soil Tests"), width=2 ,align='center'),
+             dbc.Col(html.Div('HWEON'),width=1,align='center'),
+             dbc.Col(html.Div(id="StateHWEON",children=""),width=1, align='center'),
+             dbc.Col(html.Div(''),width=1, align='center'),
+             dbc.Col(html.Div('Mineral N'),width=1,align='center'),
+             dbc.Col(html.Div(id="StateMineralN",children=""),width=1, align='center'),
+             ]),
     dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='TtGraph')),width=4)]) 
     ])
-    
+
 @app.callback(
     Output('TtGraph','figure'),
     Input('Location','value'),
@@ -530,35 +508,199 @@ def update_Tt(Location,PriorEstablishDate,FollowingHarvestDate):
     fig = px.line(x=Tt.index,y=Tt.values)
     return fig
 
+# @app.callback(
+#     #Output('TtGraph','figure'),
+#     Output('CropUptakeGraph','figure')
+#     Input('RefreshButton','n_clicks'))
+# def UpdateGraphs(RefreshButton):
+#     return CropGraph()
+    
+# )
+
+
+@app.callback(Output("StateLocation",'children'),Input("Location",'value'))
+def StateLocation(Location):
+    FieldConfig["Location"] = Location
+    return Location
+@app.callback(Output("StateHWEON",'children'),Input("HWEON",'value'))
+def StateLocation(HWEON):
+    FieldConfig["HWEON"] = HWEON
+    return HWEON
+@app.callback(Output("StateMineralN",'children'),Input("MineralN",'value'))
+def StateLocation(MineralN):
+    FieldConfig["MineralN"] = MineralN
+    return MineralN
+
+@app.callback(Output("StatePriorCrop",'children'),Input("PriorCrop",'value'))
+def StatePriorCrop(PriorCrop):
+    PriorConfig["Crop"] = PriorCrop
+    return PriorCrop
+@app.callback(Output("StatePriorSaleableYield",'children'),Input("PriorSaleableYield",'value'))
+def StatePriorCrop(PriorSaleableYield):
+    PriorConfig["SaleableYield"] = PriorSaleableYield
+    return PriorSaleableYield
+@app.callback(Output("StatePriorUnits",'children'),Input("PriorUnits",'value'))
+def StatePriorCrop(PriorUnits):
+    PriorConfig["Units"] = PriorUnits
+    return PriorUnits
+@app.callback(Output("StatePriorFieldLoss",'children'),Input("PriorFieldLoss",'value'))
+def StatePriorCrop(PriorFieldLoss):
+    PriorConfig["FieldLoss"] = PriorFieldLoss
+    return PriorFieldLoss
+@app.callback(Output("StatePriorDressingLoss",'children'),Input("PriorDressingLoss",'value'))
+def StatePriorCrop(PriorDressingLoss):
+    PriorConfig["DressingLoss"] = PriorDressingLoss
+    return PriorDressingLoss
+@app.callback(Output("StatePriorMoistureContent",'children'),Input("PriorMoistureContent",'value'))
+def StatePriorCrop(PriorMoistureContent):
+    PriorConfig["MoistureContent"] = PriorMoistureContent
+    return PriorMoistureContent
+@app.callback(Output("StatePriorEstablishDate",'children'),Input("PriorEstablishDate",'date'))
+def StatePriorCrop(PriorEstablishDate):
+    PriorConfig["EstablishDate"] = dt.datetime.strptime(str(PriorEstablishDate).split('T')[0],'%Y-%m-%d')
+    return PriorEstablishDate
+@app.callback(Output("StatePriorHarvestDate",'children'),Input("PriorHarvestDate",'date'))
+def StatePriorCrop(PriorHarvestDate):
+    PriorConfig["HarvestDate"] = dt.datetime.strptime(str(PriorHarvestDate).split('T')[0],'%Y-%m-%d')
+    return PriorHarvestDate
+@app.callback(Output("StatePriorEstablishStage",'children'),Input("PriorEstablishStage",'value'))
+def StateCurrentCrop(PriorEstablishStage):
+    PriorConfig["EstablishStage"] = PriorEstablishStage
+    return PriorEstablishStage
+@app.callback(Output("StatePriorHarvestStage",'children'),Input("PriorHarvestStage",'value'))
+def StatePriorCrop(PriorHarvestStage):
+    PriorConfig["HarvestStage"] = PriorHarvestStage
+    return PriorHarvestStage
+@app.callback(Output("StatePriorResidueTreatment",'children'),Input("PriorResidueTreatment",'value'))
+def StatePriorCrop(PriorResidueTreatment):
+    PriorConfig["ResidueTreatment"] = PriorResidueTreatment
+    return PriorResidueTreatment
+
+@app.callback(Output("StateCurrentCrop",'children'),Input("CurrentCrop",'value'))
+def StateCurrentCrop(CurrentCrop):
+    CurrentConfig["Crop"] = CurrentCrop
+    return CurrentCrop
+@app.callback(Output("StateCurrentSaleableYield",'children'),Input("CurrentSaleableYield",'value'))
+def StateCurrentCrop(CurrentSaleableYield):
+    CurrentConfig["SaleableYield"] = CurrentSaleableYield
+    return CurrentSaleableYield
+@app.callback(Output("StateCurrentUnits",'children'),Input("CurrentUnits",'value'))
+def StateCurrentCrop(CurrentUnits):
+    CurrentConfig["Units"] = CurrentUnits
+    return CurrentUnits
+@app.callback(Output("StateCurrentFieldLoss",'children'),Input("CurrentFieldLoss",'value'))
+def StateCurrentCrop(CurrentFieldLoss):
+    CurrentConfig["FieldLoss"] = CurrentFieldLoss
+    return CurrentFieldLoss
+@app.callback(Output("StateCurrentDressingLoss",'children'),Input("CurrentDressingLoss",'value'))
+def StateCurrentCrop(CurrentDressingLoss):
+    CurrentConfig["DressingLoss"] = CurrentDressingLoss
+    return CurrentDressingLoss
+@app.callback(Output("StateCurrentMoistureContent",'children'),Input("CurrentMoistureContent",'value'))
+def StateCurrentCrop(CurrentMoistureContent):
+    CurrentConfig["MoistureContent"] = CurrentMoistureContent
+    return CurrentMoistureContent
+@app.callback(Output("StateCurrentEstablishDate",'children'),Input("CurrentEstablishDate",'date'))
+def StateCurrentCrop(CurrentEstablishDate):
+    CurrentConfig["EstablishDate"] = dt.datetime.strptime(str(CurrentEstablishDate).split('T')[0],'%Y-%m-%d')
+    return CurrentEstablishDate
+@app.callback(Output("StateCurrentHarvestDate",'children'),Input("CurrentHarvestDate",'date'))
+def StateCurrentCrop(CurrentHarvestDate):
+    CurrentConfig["HarvestDate"] = dt.datetime.strptime(str(CurrentHarvestDate).split('T')[0],'%Y-%m-%d')
+    return CurrentHarvestDate
+@app.callback(Output("StateCurrentEstablishStage",'children'),Input("CurrentEstablishStage",'value'))
+def StateCurrentCrop(CurrentEstablishStage):
+    CurrentConfig["EstablishStage"] = CurrentEstablishStage
+    return CurrentEstablishStage
+@app.callback(Output("StateCurrentHarvestStage",'children'),Input("CurrentHarvestStage",'value'))
+def StateCurrentCrop(CurrentHarvestStage):
+    CurrentConfig["HarvestStage"] = CurrentHarvestStage
+    return CurrentHarvestStage
+@app.callback(Output("StateCurrentResidueTreatment",'children'),Input("CurrentResidueTreatment",'value'))
+def StateCurrentCrop(CurrentResidueTreatment):
+    CurrentConfig["ResidueTreatment"] = CurrentResidueTreatment
+    return CurrentResidueTreatment
+
+@app.callback(Output("StateFollowingCrop",'children'),Input("FollowingCrop",'value'))
+def StateFollowingCrop(FollowingCrop):
+    FollowingConfig["Crop"] = FollowingCrop
+    return FollowingCrop
+@app.callback(Output("StateFollowingSaleableYield",'children'),Input("FollowingSaleableYield",'value'))
+def StateFollowingCrop(FollowingSaleableYield):
+    FollowingConfig["SaleableYield"] = FollowingSaleableYield
+    return FollowingSaleableYield
+@app.callback(Output("StateFollowingUnits",'children'),Input("FollowingUnits",'value'))
+def StateFollowingCrop(FollowingUnits):
+    FollowingConfig["Units"] = FollowingUnits
+    return FollowingUnits
+@app.callback(Output("StateFollowingFieldLoss",'children'),Input("FollowingFieldLoss",'value'))
+def StateFollowingCrop(FollowingFieldLoss):
+    FollowingConfig["FieldLoss"] = FollowingFieldLoss
+    return FollowingFieldLoss
+@app.callback(Output("StateFollowingDressingLoss",'children'),Input("FollowingDressingLoss",'value'))
+def StateFollowingCrop(FollowingDressingLoss):
+    FollowingConfig["DressingLoss"] = FollowingDressingLoss
+    return FollowingDressingLoss
+@app.callback(Output("StateFollowingMoistureContent",'children'),Input("FollowingMoistureContent",'value'))
+def StateFollowingCrop(FollowingMoistureContent):
+    FollowingConfig["MoistureContent"] = FollowingMoistureContent
+    return FollowingMoistureContent
+@app.callback(Output("StateFollowingEstablishDate",'children'),Input("FollowingEstablishDate",'date'))
+def StateFollowingCrop(FollowingEstablishDate):
+    FollowingConfig["EstablishDate"] = dt.datetime.strptime(str(FollowingEstablishDate).split('T')[0],'%Y-%m-%d')
+    return FollowingEstablishDate
+@app.callback(Output("StateFollowingHarvestDate",'children'),Input("FollowingHarvestDate",'date'))
+def StateFollowingCrop(FollowingHarvestDate):
+    FollowingConfig["HarvestDate"] = dt.datetime.strptime(str(FollowingHarvestDate).split('T')[0],'%Y-%m-%d')
+    return FollowingHarvestDate
+@app.callback(Output("StateFollowingEstablishStage",'children'),Input("FollowingEstablishStage",'value'))
+def StateCurrentCrop(FollowingEstablishStage):
+    FollowingConfig["EstablishStage"] = FollowingEstablishStage
+    return FollowingEstablishStage
+@app.callback(Output("StateFollowingHarvestStage",'children'),Input("FollowingHarvestStage",'value'))
+def StateFollowingCrop(FollowingHarvestStage):
+    FollowingConfig["HarvestStage"] = FollowingHarvestStage
+    return FollowingHarvestStage
+@app.callback(Output("StateFollowingResidueTreatment",'children'),Input("FollowingResidueTreatment",'value'))
+def StateFollowingCrop(FollowingResidueTreatment):
+    FollowingConfig["ResidueTreatment"] = FollowingResidueTreatment
+    return FollowingResidueTreatment
+
 @app.callback(
     Output('CropUptakeGraph','figure'),
-    Input('Location','value'),
-    Input('CurrentCrop','value'),
-    Input('CurrentSaleableYield','value'),
-    Input('CurrentUnits','value'),
-    Input('CurrentFieldLoss','value'),
-    Input('CurrentDressingLoss','value'),
-    Input('CurrentMoistureContent','value'),
-    Input('CurrentEstablishDate','date'),
-    Input('CurrentHarvestDate','date'),
-    Input('CurrentEstablishStage','value'),
-    Input('CurrentHarvestStage','value'),
-    Input('CurrentResidueTreatment','value'))
-def update_Cropgraph(Location,CurrentCrop,CurrentSaleableYield,CurrentUnits,CurrentFieldLoss,CurrentDressingLoss,
-                     CurrentMoistureContent,CurrentEstablishDate,CurrentHarvestDate,CurrentEstablishStage,
-                     CurrentHarvestStage,CurrentResidueTreatment):
-    CurrentConfig["Crop"] = CurrentCrop
-    CurrentConfig["SaleableYeild"] = CurrentSaleableYield
-    CurrentConfig["Units"]=CurrentUnits
-    CurrentConfig["FieldLoss"]=CurrentFieldLoss
-    CurrentConfig["DressingLoss"]=CurrentDressingLoss
-    CurrentConfig["MoistureContent"]=CurrentMoistureContent
-    CurrentConfig["EstablishDate"]= dt.datetime.strptime(str(CurrentEstablishDate).split('T')[0],'%Y-%m-%d')
-    CurrentConfig["HarvestDate"]= dt.datetime.strptime(str(CurrentHarvestDate).split('T')[0],'%Y-%m-%d')    
-    CurrentConfig["EstablishStage"]=CurrentEstablishStage
-    CurrentConfig["HarvestStage"]=CurrentHarvestStage
-    CurrentConfig["ResidueTreatment"]=CurrentResidueTreatment
+    Input('RefreshButton','n_clicks'))
+def RefreshGraphs(n_clicks):
     return CropGraph()
+
+# @app.callback(
+#     Output('CropUptakeGraph','figure'),
+#     Input('Location','value'),
+#     Input('CurrentCrop','value'),
+#     Input('CurrentSaleableYield','value'),
+#     Input('CurrentUnits','value'),
+#     Input('CurrentFieldLoss','value'),
+#     Input('CurrentDressingLoss','value'),
+#     Input('CurrentMoistureContent','value'),
+#     Input('CurrentEstablishDate','date'),
+#     Input('CurrentHarvestDate','date'),
+#     Input('CurrentEstablishStage','value'),
+#     Input('CurrentHarvestStage','value'),
+#     Input('CurrentResidueTreatment','value'))
+# def update_Cropgraph(Location,CurrentCrop,CurrentSaleableYield,CurrentUnits,CurrentFieldLoss,CurrentDressingLoss,
+#                      CurrentMoistureContent,CurrentEstablishDate,CurrentHarvestDate,CurrentEstablishStage,
+#                      CurrentHarvestStage,CurrentResidueTreatment):
+#     CurrentConfig["Crop"] = CurrentCrop
+#     CurrentConfig["SaleableYeild"] = CurrentSaleableYield
+#     CurrentConfig["Units"]=CurrentUnits
+#     CurrentConfig["FieldLoss"]=CurrentFieldLoss
+#     CurrentConfig["DressingLoss"]=CurrentDressingLoss
+#     CurrentConfig["MoistureContent"]=CurrentMoistureContent
+#     CurrentConfig["EstablishDate"]= dt.datetime.strptime(str(CurrentEstablishDate).split('T')[0],'%Y-%m-%d')
+#     CurrentConfig["HarvestDate"]= dt.datetime.strptime(str(CurrentHarvestDate).split('T')[0],'%Y-%m-%d')    
+#     CurrentConfig["EstablishStage"]=CurrentEstablishStage
+#     CurrentConfig["HarvestStage"]=CurrentHarvestStage
+#     CurrentConfig["ResidueTreatment"]=CurrentResidueTreatment
+#     return CropGraph()
     
 # @app.callback(
 #     Output('SoilMineralisation','figure),
@@ -575,3 +717,6 @@ def update_Cropgraph(Location,CurrentCrop,CurrentSaleableYield,CurrentUnits,Curr
     
 # Run app and display result inline in the notebook
 app.run_server(mode='External')
+# -
+
+FieldConfig
