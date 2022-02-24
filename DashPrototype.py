@@ -30,6 +30,9 @@ from bisect import bisect_left, bisect_right
 from jupyter_dash import JupyterDash
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
+import cufflinks as cf
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+import copy
 # %matplotlib inline
 
 # ## General components
@@ -214,6 +217,7 @@ def CalculateSoilMineralN():
     NFertReq = (CurrentConfig["CropN"] + FinalN) - FieldConfig["MineralN"] - InCropMineralisation
     NFertReq = NFertReq * 1/Eff
     NFertReq = np.ceil(NFertReq)
+    print(NFertReq)
     NAppn = NFertReq/splits
     plength = duration/(splits + 1)
     xlocs = [0]
@@ -272,7 +276,6 @@ ResidualN = pd.DataFrame(index = pd.MultiIndex.from_product([['Root','Stover','F
                              columns=['Values'],data = [0.0]*Tt.index.size*3)
 SoilN = pd.Series(index = Tt.index, data=[np.nan]*Tt.index.size)
 
-
 # -
 
 # ## Graph constructors
@@ -322,11 +325,38 @@ def MineralisationGraph():
     return fig
 
 def SoilNGraph():
-    fig = px.line(x=SoilN.index,y=SoilN.values,color_discrete_sequence=['brown'],
-                  range_x = [GraphStart,EndYearDate])
+    # fig = px.line(x=SoilN.index,y=SoilN.values,color_discrete_sequence=['brown'],
+    #               range_x = [GraphStart,EndYearDate])
+    df = pd.DataFrame(index=SoilN.index,data=SoilN.values,columns=['Values'])
+    fig = df.iplot(asFigure=True, kind='line',
+               #xTitle='Dates',yTitle='Returns',title='Returns',
+               vspan={'x0':GraphStart,'x1':EndYearDate,'color':'rgba(30,30,30,0.3)','fill':True,'opacity':.4})
     fig.update_layout(title_text="Soi Mineral N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
     fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
     fig.update_xaxes(title_text=None)
+    # fig.add_annotation(dict(font=dict(color='black',size=15), x=.3,y=0.7,showarrow=False,
+    #                                 text=np.int(FertN.sum()),
+    #                                 textangle=0,
+    #                                 xanchor='center',
+    #                                 xref="paper",
+    #                                 yref="paper"))
+    x0 = [GraphStart, CurrentConfig["HarvestDate"]]
+    x1 = [CurrentConfig["EstablishDate"], EndYearDate]
+    # get dict from tuple made by vspan()
+    xElem = fig['layout']['shapes'][0]
+    # container (list) for dicts / shapes
+    shp_lst=[]
+    # make dicts according to x0 and X1
+    # and edit elements of those dicts
+    for i in range(0,len(x0)):
+        shp_lst.append(copy.deepcopy(xElem))
+        shp_lst[i]['x0'] = x0[i]
+        shp_lst[i]['x1'] = x1[i]
+        shp_lst[i]['line']['color'] = 'rgba(0,0,0,0)'
+    # replace shape in fig with multiple new shapes
+    fig['layout']['shapes']= tuple(shp_lst)
+    fig.update_layout(xaxis_range=[GraphStart,EndYearDate])
+
     return fig
 
 
