@@ -71,24 +71,6 @@ ResidueTreatments = pd.DataFrame(index = ['Incorporated','Left on Surface','Bale
                                  columns = ['%returned'])
 ResidueTreatmentsDropdown = [{'label':i,'value':i} for i in ResidueTreatments.index]
 
-CropConfigs = ["Crop","SaleableYield","Units","FieldLoss","DressingLoss","MoistureContent",
-               "EstablishDate","EstablishStage","HarvestDate","HarvestStage","ResidueTreatment",
-               "RootN","StoverN","FieldLossN"]
-
-def setCropConfigDefaults(data):
-     return pd.Series(index = CropConfigs,data = data)
-                                 
-PriorConfig = setCropConfigDefaults(["Wheatautumn",16000,"kg/ha",5,0,0,dt.datetime.strptime('01-04-2020','%d-%m-%Y'),
-                                     "Seed",dt.datetime.strptime('1-10-2020','%d-%m-%Y'),"EarlyReproductive",
-                                     "Incorporated",0,0,0])
-CurrentConfig = setCropConfigDefaults(["Potatolong",70,"t/ha",10,5,77,dt.datetime.strptime('15-10-2020','%d-%m-%Y'),
-                                       "Seed",dt.datetime.strptime('10-3-2021','%d-%m-%Y'),"Maturity",
-                                       "Incorporated",0,0,0])
-FollowingConfig = setCropConfigDefaults(["Wheatautumn",12,"t/ha",5,5,15,dt.datetime.strptime('01-04-2021','%d-%m-%Y'),
-                                         "Seed",dt.datetime.strptime('10-2-2022','%d-%m-%Y'),"Maturity",
-                                         "Incorporated",0,0,0])
-FieldConfig = pd.Series(index = ['Location','HWEON','MineralN'],data=['Lincoln',17,19])
-
 # +
 BiomassScaller = []
 Covers = []
@@ -343,33 +325,50 @@ def Deficit(ax,Met,Establish,Harvest,EstablishStage,HarvestStage,r,m,InitialN,Fi
 
 # -
 
+# ## Global properties
+
+# +
+CropConfigs = ["Crop","SaleableYield","Units","FieldLoss","DressingLoss","MoistureContent",
+               "EstablishDate","EstablishStage","HarvestDate","HarvestStage","ResidueTreatment",
+               "RootN","StoverN","FieldLossN"]
+
+def setCropConfigDefaults(data):
+     return pd.Series(index = CropConfigs,data = data)
+                                 
+PriorConfig = setCropConfigDefaults(["Wheatautumn",16000,"kg/ha",5,0,0,dt.datetime.strptime('01-04-2020','%d-%m-%Y'),
+                                     "Seed",dt.datetime.strptime('1-10-2020','%d-%m-%Y'),"EarlyReproductive",
+                                     "Incorporated",0,0,0])
+CurrentConfig = setCropConfigDefaults(["Potatolong",70,"t/ha",10,5,77,dt.datetime.strptime('15-10-2020','%d-%m-%Y'),
+                                       "Seed",dt.datetime.strptime('10-3-2021','%d-%m-%Y'),"Maturity",
+                                       "Incorporated",0,0,0])
+FollowingConfig = setCropConfigDefaults(["Wheatautumn",12,"t/ha",5,5,15,dt.datetime.strptime('01-04-2021','%d-%m-%Y'),
+                                         "Seed",dt.datetime.strptime('10-2-2022','%d-%m-%Y'),"Maturity",
+                                         "Incorporated",0,0,0])
+FieldConfig = pd.Series(index = ['Location','HWEON','MineralN'],data=['Lincoln',17,19])
+
+defaultLoc = 'Lincoln'
+GraphStart = PriorConfig["HarvestDate"] - dt.timedelta(days=14)
+EndYearDate = CurrentConfig["EstablishDate"] + dt.timedelta(days=356)
+Tt = DeriveMedianTt(defaultLoc,PriorConfig["EstablishDate"],FollowingConfig["HarvestDate"] + dt.timedelta(days=7))
+DeltaRootN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaStoverN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaFieldLossN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
+DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
+# -
+
+DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum()
+
+(DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum()
+
     MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['SOM','Residue'],Tt[CurrentConfig['EstablishDate']:].index],
                                       names=['Component','Date']),columns=['Values'])
     MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values
     MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
     SOMRates(Tt,FieldConfig['HWEON'])
     MineralisationData.reset_index(inplace=True)
-    px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
+    fig = px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
                   range_x = [GraphStart,EndYearDate])
-
-DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
-
-SOMRates(Tt,17)
-
-pd.MultiIndex.from_product([['Residue','SOM'],Tt.index])
-
-    MineralisationData = pd.DataFrame(index=pd.MultiIndex.from_product([['Residue','SOM'],Tt[CurrentConfig['EstablishDate']:].index],
-                                      names=['Component','Date']),columns=['Values'])
-    MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values                                  
-    MineralisationData.loc['SOM','Values'] = DeltaSOMN[CurrentConfig['EstablishDate']:].cumsum().values + MineralisationData.loc['Residue','Values'].values
-
-MineralisationData.reset_index()
-
-test2 = test.loc[test.Component=='FieldLoss'].copy()
-
-test2.loc[:,'Component'] = 'Residue'
-
-(DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values
+    fig
 
 
 # +
@@ -388,23 +387,12 @@ def MineralisationGraph():
     MineralisationData.loc['Residue','Values'] = (DeltaRootN[CurrentConfig['EstablishDate']:] + DeltaStoverN[CurrentConfig['EstablishDate']:] + DeltaFieldLossN[CurrentConfig['EstablishDate']:]).cumsum().values + MineralisationData.loc['SOM','Values'].values                                 
     SOMRates(Tt,FieldConfig['HWEON'])
     MineralisationData.reset_index(inplace=True)
-    fig px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
+    fig = px.line(data_frame=MineralisationData,x='Date',y='Values',color='Component',color_discrete_sequence=['brown','green'],
                   range_x = [GraphStart,EndYearDate])
     return fig
     
 # Build App
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
-
-defaultLoc = 'Lincoln'
-defaultStartDate = PriorConfig["EstablishDate"]
-defaultEndDate = FollowingConfig["HarvestDate"] + dt.timedelta(days=7)
-Tt = DeriveMedianTt(defaultLoc,defaultStartDate,defaultEndDate)
-DeltaRootN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
-DeltaStoverN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
-DeltaFieldLossN = pd.Series(index=Tt.index,data=[0.0]*Tt.index.size)
-DeltaSOMN = pd.Series(index = Tt.index, data=[0.0]*Tt.index.size)
-GraphStart = PriorConfig["HarvestDate"] - dt.timedelta(days=14)
-EndYearDate = CurrentConfig["EstablishDate"] + dt.timedelta(days=356)
     
 def CropInputs(pos):
     CropConfig = globals()[pos+"Config"]
@@ -691,6 +679,3 @@ def RefreshGraphs(n_clicks):
 
 # Run app and display result inline in the notebook
 app.run_server(mode='External')
-# -
-
-Tt
