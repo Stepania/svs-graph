@@ -59,10 +59,10 @@ plt.xlabel('Temperature accumulation')
 
 # ## Declair Global properties
 
-Config = cnbf.setCropConfig(["Lincoln","","","","",0,1,0,0,0,
+CurrentConfig = cnbf.setCropConfig(["Lincoln","","","","",0,1,0,0,0,
                                 dt.datetime.strptime('01-01-1900','%d-%m-%Y'),"Seed",
                                 dt.datetime.strptime('01-02-1900','%d-%m-%Y'),"EarlyReproductive",[]])
-Config.to_pickle("Config.pkl")
+CurrentConfig.to_pickle("CurrentConfig.pkl")
 # Tt = pd.DataFrame()
 
 # ## Graph constructors
@@ -94,77 +94,80 @@ def CropWaterGraph(cropWater):
 # +
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
 
+
 app.layout = html.Div([
     dbc.Row([dbc.Col(html.H1("Field Location"), width=2 ,align='center'),
              dbc.Col(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln'), width=3 ,align='center')]),
-    dbc.Row([dbc.Col(dbc.Card(cnbf.CropInputs('',EndUseCatagoriesDropdown))),dbc.Col(dbc.Card())]),
+    dbc.Row([dbc.Col(dbc.Card(cnbf.CropInputs('Current',EndUseCatagoriesDropdown))),dbc.Col(dbc.Card())]),
     html.Br(),
     dbc.Row([dbc.Col(html.Button("Refresh",id="RefreshButton"),width=2,align='center')             ]),
     dbc.Row([dbc.Col(dbc.Card(dcc.Graph(id='CropUptakeGraph')),width=4),
              dbc.Col(dbc.Card(dcc.Graph(id='CropWaterGraph')),width=4)])
     ])
 
-@app.callback(Output("Group","children"),Output("Crop","children"),Output("Type","children"),Output("SaleableYield",'children'),
-              Output("Units",'children'),Output("Product Type","children"), Output("FieldLoss","children"),Output("DressingLoss","children"),
-              Output("MoistureContent","children"),Output("EstablishDate","children"), Output("EstablishStage",'children'),
-              Output("HarvestDate", "children"),Output("HarvestStage",'children'),
-              Input("End use DD","value"),Input("Group DD","value"),Input("Crop DD","value"), Input("Type DD","value"))
+@app.callback(Output("Location",'value'),Input("Location",'value'))
+def StateCrop(Location):
+    cnbf.updateConfig(["Location"],[Location],"CurrentConfig.pkl")
+    return Location
+
+pos = 'Current'
+@app.callback(Output(pos+"Group","children"),Output(pos+"Crop","children"),Output(pos+"Type","children"),Output(pos+"SaleableYield",'children'),
+              Output(pos+"Units",'children'),Output(pos+"Product Type","children"), Output(pos+"FieldLoss","children"),Output(pos+"DressingLoss","children"),
+              Output(pos+"MoistureContent","children"),Output(pos+"EstablishDate","children"), Output(pos+"EstablishStage",'children'),
+              Output(pos+"HarvestDate", "children"),Output(pos+"HarvestStage",'children'),
+              Input(pos+"End use DD","value"),Input(pos+"Group DD","value"),Input(pos+"Crop DD","value"), Input(pos+"Type DD","value"))
 def ChangeCrop(EndUseValue, GroupValue, CropValue, TypeValue):
-    return cnbf.UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoefficients,'')
+    return cnbf.UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoefficients,pos)
     
-@app.callback(Output("Defoliation Dates","children"), Input("EstablishDate DP",'date'), Input("HarvestDate DP",'date'), prevent_initial_call=True)
+@app.callback(Output(pos+"Defoliation Dates","children"), Input(pos+"EstablishDate DP",'date'), Input(pos+"HarvestDate DP",'date'), prevent_initial_call=True)
 def DefoliationOptions(Edate, Hdate):
-    defDates = dcc.Checklist(id="Def Dates",options=[])
+    defDates = dcc.Checklist(id=pos+"Def Dates",options=[])
     if (Edate != None) and (Hdate!= None):
         cropMonths = pd.date_range(dt.datetime.strptime(str(Edate).split('T')[0],'%Y-%m-%d'),
                                    dt.datetime.strptime(str(Hdate).split('T')[0],'%Y-%m-%d'),freq='MS')
         DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-        defDates = dcc.Checklist(id="Def Dates", options = DefCheckMonths, value=[])
+        defDates = dcc.Checklist(id=pos+"Def Dates", options = DefCheckMonths, value=[])
     return defDates
 
-@app.callback(Output("Location",'value'),Input("Location",'value'))
-def StateCrop(Location):
-    cnbf.updateConfig(["Location"],[Location],"Config.pkl")
-    return Location
-@app.callback(Output("EstablishDate DP",'date'),Input("EstablishDate DP",'date'), prevent_initial_call=True)
+@app.callback(Output(pos+"EstablishDate DP",'date'),Input(pos+"EstablishDate DP",'date'), prevent_initial_call=True)
 def StateCrop(EstablishDate):
-    cnbf.updateConfig(["EstablishDate"],[dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')],"Config.pkl")
+    cnbf.updateConfig(["EstablishDate"],[dt.datetime.strptime(str(EstablishDate).split('T')[0],'%Y-%m-%d')],pos+"Config.pkl")
     return EstablishDate
-@app.callback(Output("HarvestDate DP",'date'),Input("HarvestDate DP",'date'), prevent_initial_call=True)
+@app.callback(Output(pos+"HarvestDate DP",'date'),Input(pos+"HarvestDate DP",'date'), prevent_initial_call=True)
 def StateCrop(HarvestDate):
-    cnbf.updateConfig(["HarvestDate"],[dt.datetime.strptime(str(HarvestDate).split('T')[0],'%Y-%m-%d')],"Config.pkl")
+    cnbf.updateConfig(["HarvestDate"],[dt.datetime.strptime(str(HarvestDate).split('T')[0],'%Y-%m-%d')],pos+"Config.pkl")
     return HarvestDate
-@app.callback(Output("SYInput",'value'),Input("SYInput",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"SYInput",'value'),Input(pos+"SYInput",'value'), prevent_initial_call=True)
 def StateCrop(SaleableYield):
-    cnbf.updateConfig(["SaleableYield"],[SaleableYield],"Config.pkl")
+    cnbf.updateConfig(["SaleableYield"],[SaleableYield],pos+"Config.pkl")
     return SaleableYield
-@app.callback(Output("Units DD",'value'),Input("Units DD",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"Units DD",'value'),Input(pos+"Units DD",'value'), prevent_initial_call=True)
 def StateCrop(Units):
-    cnbf.updateConfig(["UnitConverter"],[Units],"Config.pkl")
+    cnbf.updateConfig(["UnitConverter"],[Units],pos+"Config.pkl")
     return Units
-@app.callback(Output("FLInput",'value'),Input("FLInput",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"FLInput",'value'),Input(pos+"FLInput",'value'), prevent_initial_call=True)
 def StateCrop(FieldLoss):
-    cnbf.updateConfig(["FieldLoss"],[FieldLoss],"Config.pkl")
+    cnbf.updateConfig(["FieldLoss"],[FieldLoss],pos+"Config.pkl")
     return FieldLoss
-@app.callback(Output("DLInput",'value'),Input("DLInput",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"DLInput",'value'),Input(pos+"DLInput",'value'), prevent_initial_call=True)
 def StateCrop(DressingLoss):
-    cnbf.updateConfig(["DressingLoss"],[DressingLoss],"Config.pkl")
+    cnbf.updateConfig(["DressingLoss"],[DressingLoss],pos+"Config.pkl")
     return DressingLoss
-@app.callback(Output("MCInput",'value'),Input("MCInput",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"MCInput",'value'),Input(pos+"MCInput",'value'), prevent_initial_call=True)
 def StateCrop(MoistureContent):
-    cnbf.updateConfig(["MoistureContent"],[MoistureContent],"Config.pkl")
+    cnbf.updateConfig(["MoistureContent"],[MoistureContent],pos+"Config.pkl")
     return MoistureContent
-@app.callback(Output("EstablishStage DD",'value'),Input("EstablishStage DD",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"EstablishStage DD",'value'),Input(pos+"EstablishStage DD",'value'), prevent_initial_call=True)
 def StateCrop(EstablishStage):
-    cnbf.updateConfig(["EstablishStage"],[EstablishStage],"Config.pkl")
+    cnbf.updateConfig(["EstablishStage"],[EstablishStage],pos+"Config.pkl")
     return EstablishStage
-@app.callback(Output("HarvestStage DD",'value'),Input("HarvestStage DD",'value'), prevent_initial_call=True)
+@app.callback(Output(pos+"HarvestStage DD",'value'),Input(pos+"HarvestStage DD",'value'), prevent_initial_call=True)
 def StateCrop(HarvestStage):
-    cnbf.updateConfig(["HarvestStage"],[HarvestStage],"Config.pkl")
+    cnbf.updateConfig(["HarvestStage"],[HarvestStage],pos+"Config.pkl")
     return HarvestStage
-@app.callback(Output('Def Dates', 'value'),Input('Def Dates','value'))
+@app.callback(Output(pos+'Def Dates', 'value'),Input(pos+'Def Dates','value'))
 def setDefoliationDates(months):
-    cnbf.updateConfig(["DefoliationDates"],[months],"Config.pkl")
+    cnbf.updateConfig(["DefoliationDates"],[months],pos+"Config.pkl")
     return months
 
 @app.callback(
@@ -172,10 +175,10 @@ def setDefoliationDates(months):
     Output('CropWaterGraph','figure'),
     Input('RefreshButton','n_clicks'), prevent_initial_call=True)
 def RefreshGraphs(n_clicks):
-    Config = pd.read_pickle("Config.pkl")
+    Config = pd.read_pickle(pos+"Config.pkl")
     Tt = cnbf.CalculateMedianTt(Config["EstablishDate"],Config["HarvestDate"],metFiles[Config["Location"]])
     CropN, CropWater, NComponentColors = cnbf.CalculateCropOutputs(Tt,Config,CropCoefficients)
     return CropNGraph(CropN, NComponentColors), CropWaterGraph(CropWater)
 
 # Run app and display result inline in the notebook
-app.run_server(mode='external')
+app.run_server(mode='inline')

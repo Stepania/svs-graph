@@ -310,7 +310,7 @@ def CropInputs(pos,EndUseCatagoriesDropdown):
     dbc.Row([dbc.Col([html.Div('Harvest Date',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.DatePickerSingle(id=pos+"HarvestDate DP", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = "Select planting date",display_format='D-MMM-YYYY')], id = "HarvestDate", width=3, align='center'), 
+                                            placeholder = "Select planting date",display_format='D-MMM-YYYY')], id=pos+"HarvestDate", width=3, align='center'), 
              dbc.Col([html.Div('Harvest Stage',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"HarvestStage DD",options = [],placeholder='')], id=pos+"HarvestStage", width=3, align='center')]), 
     dbc.Row([dbc.Col([html.Div('Defoliatoin Dates')], width=3, align='center'),
@@ -381,25 +381,25 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         return TypeDropDown, PopulateDefaults
     
     ctx = dash.callback_context
-    if (ctx.triggered[0]['prop_id'] == 'End use DD.value') and (EndUseValue != None):
+    if (ctx.triggered[0]['prop_id'] == pos+'End use DD.value') and (EndUseValue != None):
         GroupDropDown,GroupOptions,GroupSelections = SetGroupDropDown()
         if GroupOptions == False:
             CropDropDown,CropOptions,CropSelections = SetCropDropDown(GroupSelections[0])
             if CropOptions == False:
                 TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupSelections[0],CropSelections[0])
         updateConfig(["End use"],[EndUseValue],pos+"Config.pkl")
-    if (ctx.triggered[0]['prop_id'] == 'Group DD.value') & (GroupValue != None):
+    if (ctx.triggered[0]['prop_id'] == pos+'Group DD.value') & (GroupValue != None):
         GroupDropDown,GroupOptions,GroupSelections = SetGroupDropDown()
         CropDropDown,CropOptions,CropSelections = SetCropDropDown(GroupValue)
         if CropOptions == False:
             TypeDropDown = SetTypeDropDown(GroupSelections[0],CropSelections[0])
         updateConfig(["Group"],[GroupValue],pos+"Config.pkl")
-    if (ctx.triggered[0]['prop_id'] == 'Crop DD.value') & (CropValue != None):
+    if (ctx.triggered[0]['prop_id'] == pos+'Crop DD.value') & (CropValue != None):
         GroupDropDown = SetGroupDropDown()[0]
         CropDropDown = SetCropDropDown(GroupValue)[0]
         TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupValue,CropValue)
         updateConfig(["Crop"],[CropValue],pos+"Config.pkl") 
-    if (ctx.triggered[0]['prop_id'] == 'Type DD.value') & (TypeValue != None):
+    if (ctx.triggered[0]['prop_id'] == pos+'Type DD.value') & (TypeValue != None):
         GroupDropDown = SetGroupDropDown()[0]
         CropDropDown = SetCropDropDown(GroupValue)[0]
         TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupValue,CropValue)        
