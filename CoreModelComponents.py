@@ -374,9 +374,12 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         return CropDropDown,Options,CropSelections
     
     def SetTypeDropDown(g,c):
+        print(g)
+        print(c)
         TypeSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == EndUseValue)&(CropCoefficients.loc[:,'Group'] == g)&(CropCoefficients.loc[:,'Colloquial Name'] == c),"Type"].drop_duplicates().dropna().values
         TypeSelections.sort()
         PopulateDefaults = False
+        print(TypeSelections)
         if len(TypeSelections) == 1:
                 noOptions = [{'label':c+" has no Type options",'value': ""}]
                 TypeDropDown = dcc.Dropdown(options = noOptions, disabled=True, value="", placeholder="",id=pos+"Type DD")
@@ -398,8 +401,9 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
     if (ctx.triggered[0]['prop_id'] == pos+'Group DD.value') & (GroupValue != None):
         GroupDropDown,GroupOptions,GroupSelections = SetGroupDropDown()
         CropDropDown,CropOptions,CropSelections = SetCropDropDown(GroupValue)
+        print(CropSelections)
         if CropOptions == False:
-            TypeDropDown = SetTypeDropDown(GroupSelections[0],CropSelections[0])
+            TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupValue,CropSelections[0])
         updateConfig(["Group"],[GroupValue],pos+"Config.pkl")
     if (ctx.triggered[0]['prop_id'] == pos+'Crop DD.value') & (CropValue != None):
         GroupDropDown = SetGroupDropDown()[0]
@@ -412,6 +416,7 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupValue,CropValue)        
         updateConfig(["Type"],[TypeValue],pos+"Config.pkl")
         PopulateDefaults = True
+    
     if (PopulateDefaults == True):
         c = pd.read_pickle(pos+"Config.pkl")
         CropFilter = (CropCoefficients.loc[:,'End use'] == c["End use"])&(CropCoefficients.loc[:,'Group'] == c["Group"])\
