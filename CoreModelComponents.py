@@ -47,6 +47,17 @@ CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', '
 Units = pd.DataFrame(index = ['t/ha','kg/ha'],data=[1000,1],columns=['toKG/ha'])
 UnitsDropDown = [{'label':i,'value':Units.loc[i,'toKG/ha']} for i in Units.index]
 
+UIConfigMap = pd.DataFrame([("SYInput","SaleableYield"),
+                            ("Units DD","UnitConverter"),
+                            ("FLInput","FieldLoss"),
+                            ("DLInput","DressingLoss"),
+                            ("MCInput","MoistureContent"),
+                            ("EstablishStage DD","EstablishStage"),
+                            ("HarvestStage DD","HarvestStage"),
+                            ("Def Dates","DefoliationDates")]
+                            ,columns=["UIID","ConfigID"])
+UIConfigMap.set_index("UIID",inplace=True)
+
 def Generalcomponents():
     # Read in Crop coefficients table and filter out nasty ones
     CropCoefficients = pd.read_excel('C:\\GitHubRepos\\Overseer-testing\\CropCoefficients\\CropCoefficientTable.xlsx',skiprows=2)
@@ -329,13 +340,9 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
     FieldLossInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "FLInput")
     DressingLossInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "DLInput")
     MoistureContentInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "MCInput",style={"width": "100%"})
-    EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = 'Choose "Crop" first', display_format='D-MMM-YYYY',disabled = True)
+    EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", placeholder = 'Choose "Crop" first', disabled = True)
     EstablishStageDD = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id=pos+"EstablishStage DD")
-    HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = 'Choose "Crop" first', display_format='D-MMM-YYYY',disabled = True)
+    HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", placeholder = 'Choose "Crop" first', disabled = True)
     HarvestStageDD = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id=pos+"HarvestStage DD")
     
     def SetGroupDropDown():
@@ -406,7 +413,7 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         updateConfig(["Type"],[TypeValue],pos+"Config.pkl")
         PopulateDefaults = True
     if (PopulateDefaults == True):
-        c = pd.read_pickle("Config.pkl")
+        c = pd.read_pickle(pos+"Config.pkl")
         CropFilter = (CropCoefficients.loc[:,'End use'] == c["End use"])&(CropCoefficients.loc[:,'Group'] == c["Group"])\
                      &(CropCoefficients.loc[:,'Colloquial Name'] == c["Crop"])&(CropCoefficients.loc[:,'Type'] == c["Type"])
         Params = pd.Series(index=CropCoefficients.loc[CropFilter,CropParams].columns, data = CropCoefficients.loc[CropFilter,CropParams].values[0])
