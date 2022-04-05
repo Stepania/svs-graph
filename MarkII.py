@@ -61,18 +61,18 @@ plt.xlabel('Temperature accumulation')
 
 # +
 PreviousConfig = cnbf.setCropConfig(["Lincoln","","","","",0,1,0,0,0,
-                                dt.datetime.strptime('03-09-2021','%d-%m-%Y'),"Seed",
-                                dt.datetime.strptime('06-03-2022','%d-%m-%Y'),"EarlyReproductive",[]])
+                                np.datetime64("NaT"),"Seed",
+                                np.datetime64("NaT"),"EarlyReproductive",[]])
 PreviousConfig.to_pickle("Previous_Config.pkl")
 
 CurrentConfig = cnbf.setCropConfig(["Lincoln","","","","",0,1,0,0,0,
-                                dt.datetime.strptime('05-05-2022','%d-%m-%Y'),"Seed",
-                                dt.datetime.strptime('08-02-2023','%d-%m-%Y'),"EarlyReproductive",[]])
+                                np.datetime64("NaT"),"Seed",
+                                np.datetime64("NaT"),"EarlyReproductive",[]])
 CurrentConfig.to_pickle("Current_Config.pkl")
 
 FollowingConfig = cnbf.setCropConfig(["Lincoln","","","","",0,1,0,0,0,
-                                dt.datetime.strptime('02-04-2022','%d-%m-%Y'),"Seed",
-                                dt.datetime.strptime('04-10-2022','%d-%m-%Y'),"EarlyReproductive",[]])
+                                np.datetime64("NaT"),"Seed",
+                                np.datetime64("NaT"),"EarlyReproductive",[]])
 FollowingConfig.to_pickle("Following_Config.pkl")
 # Tt = pd.DataFrame()
 # -
@@ -112,15 +112,26 @@ def StateCrop(Location):
         cnbf.updateConfig(["Location"],[Location],pos+"Config.pkl")
     return Location
 
-def splitprops(prop_ID,propExt):
-    prop_ID = prop_ID.replace(propExt,'')
-    return prop_ID.split('_')[0]+'_', prop_ID.split('_')[1]
+@app.callback(Output('Previous_EstablishDate','children'), Output('Previous_HarvestDate','children'),
+              Output('Current_EstablishDate','children'), Output('Current_HarvestDate','children'),
+              Output('Following_EstablishDate','children'), Output('Following_HarvestDate','children'),
+              Input('Previous_EstablishDate DP','date'), Input('Previous_HarvestDate DP','date'),
+              Input('Current_EstablishDate DP','date'), Input('Current_HarvestDate DP','date'),
+              Input('Following_EstablishDate DP','date'), Input('Following_HarvestDate DP','date'), prevent_initial_call=True)
+def StateCrop(pe,ph,ce,ch,fe,fh):
+    posc = 0
+    for d in [pe,ph,ce,ch,fe,fh]:
+        if d !=None:
+            prop_ID = list(dash.callback_context.inputs.keys())[posc]
+            pos,act = cnbf.splitprops(prop_ID,'.date')
+            cnbf.updateConfig([act[:-3]],[np.datetime64(d)],pos+"Config.pkl")
+        posc+=1
+    return cnbf.UpdateDatePickerOptions()
 
-for pos in ['Previous_','Current_','Following_']:
+for pos in cnbf.Positions:
     @app.callback(Output(pos+"Group","children"),Output(pos+"Crop","children"),Output(pos+"Type","children"),Output(pos+"SaleableYield",'children'),
               Output(pos+"Units",'children'),Output(pos+"Product Type","children"), Output(pos+"FieldLoss","children"),Output(pos+"DressingLoss","children"),
-              Output(pos+"MoistureContent","children"),Output(pos+"EstablishDate","children"), Output(pos+"EstablishStage",'children'),
-              Output(pos+"HarvestDate", "children"),Output(pos+"HarvestStage",'children'),
+              Output(pos+"MoistureContent","children"),Output(pos+"EstablishStage",'children'),Output(pos+"HarvestStage",'children'),
               Input(pos+"End use DD","value"),Input(pos+"Group DD","value"),Input(pos+"Crop DD","value"), Input(pos+"Type DD","value"))
     def ChangeCrop(EndUseValue, GroupValue, CropValue, TypeValue):
         pos = list(dash.callback_context.inputs.keys())[0].split('_')[0]+'_'
@@ -137,22 +148,13 @@ for pos in ['Previous_','Current_','Following_']:
             defDates = dcc.Checklist(id=pos+"Def Dates", options = DefCheckMonths, value=[])
         return defDates
     
-    for act in ["EstablishDate", "HarvestDate"]:
-        @app.callback(Output(pos+act+' DP','date'),Input(pos+act+' DP','date'), prevent_initial_call=True)
-        def StateCrop(actdate):
-            prop_ID = list(dash.callback_context.inputs.keys())[0]
-            pos,act = splitprops(prop_ID,'.date')
-            cnbf.updateConfig([act[:-3]],[dt.datetime.strptime(str(actdate).split('T')[0],'%Y-%m-%d')],pos+"Config.pkl")
-            return actdate
-    
     for outp in cnbf.UIConfigMap.index:
         @app.callback(Output(pos+outp,'value'),Input(pos+outp,'value'))
         def setInputValue(value):
             prop_ID = list(dash.callback_context.inputs.keys())[0]
-            pos,outp = splitprops(prop_ID,'.value')
+            pos,outp = cnbf.splitprops(prop_ID,'.value')
             cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"Config.pkl")
             return value
-#https://stackoverflow.com/questions/60383266/python-reuse-functions-in-dash-callbacks
 
 @app.callback(
     Output('CropUptakeGraph','figure'),
@@ -167,9 +169,9 @@ def RefreshGraphs(n_clicks):
 
 app.layout = html.Div([
                 dbc.Row([
-                    dbc.Col([dbc.Row(dbc.Card(cnbf.CropInputs('Previous_',EndUseCatagoriesDropdown))),
-                             dbc.Row(dbc.Card(cnbf.CropInputs('Current_',EndUseCatagoriesDropdown))),
-                             dbc.Row(dbc.Card(cnbf.CropInputs('Following_',EndUseCatagoriesDropdown)))
+                    dbc.Col([dbc.Row(dbc.Card(cnbf.CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date','Set Planting Date first'))),
+                             dbc.Row(dbc.Card(cnbf.CropInputs('Current_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first'))),
+                             dbc.Row(dbc.Card(cnbf.CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')))
                             ]),
                     dbc.Col([dbc.Row(html.H1("Field Location")),
                              dbc.Row(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln')),

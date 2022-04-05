@@ -35,6 +35,9 @@ import cufflinks as cf
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import copy
 
+Positions = ['Previous_','Current_','Following_']
+Actions = ["EstablishDate", "HarvestDate"]
+
 CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
        'Typical Establish Stage', 'Typical Establish month', 'Typical Harvest Stage',
        'Typical Harvest month', 'Typical Yield', 'Typical Yield Units',
@@ -57,6 +60,10 @@ UIConfigMap = pd.DataFrame([("SYInput","SaleableYield"),
                             ("Def Dates","DefoliationDates")]
                             ,columns=["UIID","ConfigID"])
 UIConfigMap.set_index("UIID",inplace=True)
+
+def splitprops(prop_ID,propExt):
+    prop_ID = prop_ID.replace(propExt,'')
+    return prop_ID.split('_')[0]+'_', prop_ID.split('_')[1]
 
 def Generalcomponents():
     # Read in Crop coefficients table and filter out nasty ones
@@ -286,7 +293,7 @@ def updateConfig(keys,values,ConfigAddress):
             Config[keys[i]] = values[i]
     Config.to_pickle(ConfigAddress)
 
-def CropInputs(pos,EndUseCatagoriesDropdown):
+def CropInputs(pos,EndUseCatagoriesDropdown,disableDates,EDatePHtext,HDatePHtext):
     return dbc.CardBody([
     dbc.Row([dbc.Col([html.Div('End use')], width=3, align='center'),
              dbc.Col([html.Div('Group')], width=3, align='center'),
@@ -314,14 +321,14 @@ def CropInputs(pos,EndUseCatagoriesDropdown):
     dbc.Row([dbc.Col([html.Div('Planting Date',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.DatePickerSingle(id=pos+"EstablishDate DP", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = "Select planting date", display_format='D-MMM-YYYY')], id=pos+"EstablishDate",width=3, align='center'),
+                                            placeholder = EDatePHtext, display_format='D-MMM-YYYY',disabled = disableDates)], id=pos+"EstablishDate",width=3, align='center'),
              dbc.Col([html.Div('Planting method',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"EstablishStage DD",options =[], placeholder='')],id=pos+"EstablishStage", width=3, align='center')]), 
     # html.Br(),
     dbc.Row([dbc.Col([html.Div('Harvest Date',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.DatePickerSingle(id=pos+"HarvestDate DP", min_date_allowed=dt.date(2020, 1, 1),
                                             max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = "Select planting date",display_format='D-MMM-YYYY')], id=pos+"HarvestDate", width=3, align='center'), 
+                                            placeholder = HDatePHtext,display_format='D-MMM-YYYY',disabled=True)], id=pos+"HarvestDate", width=3, align='center'), 
              dbc.Col([html.Div('Harvest Stage',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
              dbc.Col([dcc.Dropdown(id=pos+"HarvestStage DD",options = [],placeholder='')], id=pos+"HarvestStage", width=3, align='center')]), 
     dbc.Row([dbc.Col([html.Div('Defoliatoin Dates')], width=3, align='center'),
@@ -340,9 +347,9 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
     FieldLossInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "FLInput")
     DressingLossInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "DLInput")
     MoistureContentInput = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id=pos+ "MCInput",style={"width": "100%"})
-    EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", placeholder = 'Choose "Crop" first', disabled = True)
+    #EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", placeholder = 'Choose "Crop" first', disabled = True)
     EstablishStageDD = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id=pos+"EstablishStage DD")
-    HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", placeholder = 'Choose "Crop" first', disabled = True)
+    #HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", placeholder = 'Choose "Crop" first', disabled = True)
     HarvestStageDD = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id=pos+"HarvestStage DD")
     
     def SetGroupDropDown():
@@ -374,12 +381,9 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         return CropDropDown,Options,CropSelections
     
     def SetTypeDropDown(g,c):
-        print(g)
-        print(c)
         TypeSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == EndUseValue)&(CropCoefficients.loc[:,'Group'] == g)&(CropCoefficients.loc[:,'Colloquial Name'] == c),"Type"].drop_duplicates().dropna().values
         TypeSelections.sort()
         PopulateDefaults = False
-        print(TypeSelections)
         if len(TypeSelections) == 1:
                 noOptions = [{'label':c+" has no Type options",'value': ""}]
                 TypeDropDown = dcc.Dropdown(options = noOptions, disabled=True, value="", placeholder="",id=pos+"Type DD")
@@ -401,7 +405,6 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
     if (ctx.triggered[0]['prop_id'] == pos+'Group DD.value') & (GroupValue != None):
         GroupDropDown,GroupOptions,GroupSelections = SetGroupDropDown()
         CropDropDown,CropOptions,CropSelections = SetCropDropDown(GroupValue)
-        print(CropSelections)
         if CropOptions == False:
             TypeDropDown,PopulateDefaults = SetTypeDropDown(GroupValue,CropSelections[0])
         updateConfig(["Group"],[GroupValue],pos+"Config.pkl")
@@ -428,13 +431,11 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
         FieldLossInput = dcc.Input(type="number",disabled = False, value = Params["Typical Field Loss %"],min=0,id=pos+ "FLInput")
         DressingLossInput = dcc.Input(type="number",disabled = False, value = Params["Typical Dressing Loss %"],min=0,id=pos+ "DLInput")
         MoistureContentInput = dcc.Input(type="number",disabled = False, value = (round(Params["Moisture %"],0)),min=0,id=pos+ "MCInput",style={"width": "100%"})
-        EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = "Select planting date", display_format='D-MMM-YYYY')
+        # EstablishDateDP = dcc.DatePickerSingle(id=pos+"EstablishDate DP", min_date_allowed=dt.date(2020, 1, 1),
+        #                                     max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+        #                                     placeholder = "Select planting date", display_format='D-MMM-YYYY')
         EstablishStageDD = dcc.Dropdown(options = EstablishStageDropdown, disabled = False, value =Params["Typical Establish Stage"], id=pos+"EstablishStage DD")
-        HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2022, 12, 31), initial_visible_month=dt.date(2022, 2, 15),
-                                            placeholder = "Select harvest date",display_format='D-MMM-YYYY')
+        # HarvestDateDP = dcc.DatePickerSingle(id=pos+"HarvestDate DP", placeholder = "Select sowing date first", disabled =True)
         HarvestStageDD = dcc.Dropdown(options = HarvestStageDropdown, disabled = False, value =Params["Typical Harvest Stage"], id=pos+"HarvestStage DD")
         updateConfig(["SaleableYield","UnitConverter","FieldLoss","DressingLoss","MoistureContent","EstablishStage","HarvestStage"],
                      [Params["Typical Yield"],Units.loc[Params["Typical Yield Units"],"toKG/ha"],Params["Typical Field Loss %"],
@@ -442,6 +443,53 @@ def UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoeffic
     else:
         updateConfig(["SaleableYield","UnitConverter","FieldLoss","DressingLoss","MoistureContent",
                       "EstablishDate","EstablishStage","HarvestDate","HarvestStage"],
-                     [0,1,0,0,0,dt.datetime.strptime('01-01-1900','%d-%m-%Y'),"Seed",
-                      dt.datetime.strptime('01-02-1900','%d-%m-%Y'),"EarlyReproductive"], pos+"Config.pkl")
-    return GroupDropDown, CropDropDown, TypeDropDown, SalableYieldInput, UnitDropDown, ProductType, FieldLossInput, DressingLossInput, MoistureContentInput, EstablishDateDP, EstablishStageDD, HarvestDateDP, HarvestStageDD
+                     [0,1,0,0,0,np.datetime64("NaT"),"Seed",np.datetime64("NaT"),"EarlyReproductive"],
+                     pos+"Config.pkl")
+    return GroupDropDown, CropDropDown, TypeDropDown, SalableYieldInput, UnitDropDown, ProductType, FieldLossInput, DressingLossInput, MoistureContentInput, EstablishStageDD, HarvestStageDD
+
+def SetDatePicker(pos,act,PHtext,minDate,selDate,isEnabled):
+    if isEnabled:
+        DateP = dcc.DatePickerSingle(id=pos+act+" DP", date = selDate, placeholder = PHtext,
+                                          min_date_allowed=minDate, max_date_allowed=dt.date(2023, 12, 31), 
+                                          initial_visible_month = selDate, display_format='D-MMM-YYYY')     
+    else:
+        DateP = dcc.DatePickerSingle(id=pos+act+" DP", placeholder = PHtext, disabled = True)
+    return DateP
+
+def UpdateDatePickerOptions():
+    dateVals = pd.DataFrame(index = pd.MultiIndex.from_product([Positions,Actions]),
+                             columns = ['value'])
+    for d in dateVals.index:
+        c = pd.read_pickle(d[0]+"Config.pkl")
+        dateVals.loc[d,'value'] = c[d[1]]
+    
+    posc = 0
+    for pos in Positions:
+        for act in Actions:
+            if posc == 0:
+                minDate = dt.date(2020,1,1)
+                isEnabled = ~np.isnat(dateVals.iloc[0,0])
+                selDate = dateVals.iloc[0,0].astype(dt.datetime)
+                PHtext = 'Select Establish Date'
+            else:
+                minDate = dateVals.iloc[posc-1,0].astype(dt.datetime)
+                isEnabled = ~np.isnat(dateVals.iloc[posc-1,0])
+                if np.isnat(dateVals.iloc[posc,0]):
+                    selDate = None
+                else:    
+                    selDate = dateVals.iloc[posc,0].astype(dt.datetime)
+                if act == 'HarvestDate':
+                    if isEnabled:
+                        PHtext = 'Select Harvest Date'
+                    else:
+                        PHtext = 'Set Prior Crop dates first'
+                if act == 'EstablishDate':
+                    if isEnabled:
+                        PHtext = 'Select Planting Date'
+                    else:
+                        PHtext = 'Set Prior Crop dates first'
+            globals()[pos+act] = SetDatePicker(pos,act,PHtext,minDate,selDate,isEnabled)
+            posc +=1
+    
+    return Previous_EstablishDate, Previous_HarvestDate, Current_EstablishDate, Current_HarvestDate, Following_EstablishDate, Following_HarvestDate
+
