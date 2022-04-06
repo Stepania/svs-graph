@@ -178,14 +178,6 @@ def CalculateMedianTt(Start, End, Met):
     
 
 def CalculateCropOutputs(Tt, c, CropCoefficients):
-    # CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
-    #        'Typical Establish Stage', 'Typical Establish month', 'Typical Harvest Stage',
-    #        'Typical Harvest month', 'Typical Yield', 'Typical Yield Units',
-    #        'Yield type', 'Typical HI', 'HI Range',
-    #        'Moisture %', 'Typical Dressing Loss %', 'Typical Field Loss %', 'P Root', 'Max RD', 'A cover', 'rCover', 'k_ME',
-    #        'Nfixation', 'Root [N]', 'Stover [N]', 'Product [N]','Product [P]', 'Product [K]', 'Product [S]',
-    #        'Product [Ca]', 'Product [Mg]', 'Product [Na]', 'Product [Cl]',
-    #        'Stover [P]', 'Stover [K]', 'Stover [S]', 'Stover [Ca]', 'Stover [Mg]','Stover [Na]', 'Stover [Cl]']
 
     CropFilter = (CropCoefficients.loc[:,'End use'] == c["End use"])&(CropCoefficients.loc[:,'Group'] == c["Group"])\
                  &(CropCoefficients.loc[:,'Colloquial Name'] == c["Crop"])&(CropCoefficients.loc[:,'Type'] == c["Type"])

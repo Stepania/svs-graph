@@ -26,11 +26,13 @@ import matplotlib.pyplot as plt
 from bisect import bisect_left, bisect_right
 from jupyter_dash import JupyterDash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+#from dash.dependencies import Input, Output
 import cufflinks as cf
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import copy
 import CropNBalFunctions as cnbf
+from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
+from dash.exceptions import PreventUpdate
 
 # ## General components
 
@@ -132,7 +134,8 @@ for pos in cnbf.Positions:
     @app.callback(Output(pos+"Group","children"),Output(pos+"Crop","children"),Output(pos+"Type","children"),Output(pos+"SaleableYield",'children'),
               Output(pos+"Units",'children'),Output(pos+"Product Type","children"), Output(pos+"FieldLoss","children"),Output(pos+"DressingLoss","children"),
               Output(pos+"MoistureContent","children"),Output(pos+"EstablishStage",'children'),Output(pos+"HarvestStage",'children'),
-              Input(pos+"End use DD","value"),Input(pos+"Group DD","value"),Input(pos+"Crop DD","value"), Input(pos+"Type DD","value"))
+              Input(pos+"End use DD","value"),Input(pos+"Group DD","value"),Input(pos+"Crop DD","value"), Input(pos+"Type DD","value"),
+                 prevent_initial_call=True)
     def ChangeCrop(EndUseValue, GroupValue, CropValue, TypeValue):
         pos = list(dash.callback_context.inputs.keys())[0].split('_')[0]+'_'
         return cnbf.UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoefficients, pos)
@@ -158,24 +161,84 @@ for pos in cnbf.Positions:
 
 @app.callback(
     Output('CropUptakeGraph','figure'),
-    Output('MineralNGraph','figure'),
-    Output('NInputsGraph','figure'),
+    #Output('MineralNGraph','figure'),
+    #Output('NInputsGraph','figure'),
     Input('RefreshButton','n_clicks'), prevent_initial_call=True)
 def RefreshGraphs(n_clicks):
-    Config = pd.read_pickle(pos+"Config.pkl")
-    Tt = cnbf.CalculateMedianTt(Config["EstablishDate"],Config["HarvestDate"],metFiles[Config["Location"]])
-    CropN, CropWater, NComponentColors = cnbf.CalculateCropOutputs(Tt,Config,CropCoefficients)
-    return CropNGraph(CropN, NComponentColors), CropWaterGraph(CropWater)
+    PreviousConfig = pd.read_pickle("Previous_Config.pkl")
+    CurrentConfig = pd.read_pickle("Current_Config.pkl")
+    FollowingConfig = pd.read_pickle("Following_Config.pkl")
+    Tt = cnbf.CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[PreviousConfig["Location"]])
+    PreviousCropN, PreviousCropWater, PreviousNComponentColors = cnbf.CalculateCropOutputs(Tt[PreviousConfig["EstablishDate"]:PreviousConfig["HarvestDate"]],
+                                                                                           PreviousConfig,CropCoefficients)
+    CurrentCropN, CurrentCropWater, CurrentNComponentColors = cnbf.CalculateCropOutputs(Tt[CurrentConfig["EstablishDate"]:CurrentConfig["HarvestDate"]],
+                                                                                           CurrentConfig,CropCoefficients)
+    FollowingCropN, FollowingCropWater, FollowingNComponentColors = cnbf.CalculateCropOutputs(Tt[FollowingConfig["EstablishDate"]:FollowingConfig["HarvestDate"]],
+                                                                                           FollowingConfig,CropCoefficients)
+    BiomassComponents = ['Root','+ Stover','+ FieldLoss','+ DressingLoss','TotalCrop']
+    CropN = pd.DataFrame(index = pd.MultiIndex.from_product([BiomassComponents,Tt.index],
+                                                            names=['Component','Date']),columns=['Values'])
+    CropN.update(PreviousCropN)
+    CropN.update(CurrentCropN)
+    CropN.update(FollowingCropN)
+
+    return CropNGraph(CropN, FollowingNComponentColors)
+
+@app.callback(Output("LStext",'children'), Input("SaveButton","n_clicks"), 
+              Input("PreviousConfigUI","children"), Input("CurrentConfigUI","children"),
+              Input("FollowingConfigUI","children"), Input("FieldName",'value'),prevent_initial_call=True)
+def SaveConfig(n_clicks,PreviousUI,CurrentUI,FollowingUI,FieldName):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+        ConfigDF = pd.Series(index=["PreviousUI","CurrentUI","FollowingUI","PreviousVal","CurrentVal","FollowingVal"])
+        ConfigDF["PreviousUI"] = PreviousUI
+        ConfigDF["CurrentUI"] = CurrentUI
+        ConfigDF["FollowingUI"] = FollowingUI
+        ConfigDF["PreviousUI"] = PreviousUI
+        ConfigDF["PreviousVal"] = pd.read_pickle("Previous_Config.pkl")
+        ConfigDF["CurrentVal"] = pd.read_pickle("Current_Config.pkl")
+        ConfigDF["FollowingVal"] = pd.read_pickle("Following_Config.pkl")
+        ConfigDF.to_pickle(FieldName+"_SavedConfig.pkl")
+        time = dt.datetime.now()
+        return "Last Save " + str(time)
+    
+@app.callback(Output("PreviousConfigUI","children"),Output("CurrentConfigUI","children"),
+              Output("FollowingConfigUI","children"),Output("LLtext","children"),
+              Input("LoadButton","n_clicks"),Input("FieldName",'value'), prevent_initial_call=True)
+def loadConfig(n_clicks, FieldName):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+        config = pd.read_pickle(FieldName+"_SavedConfig.pkl")
+        time = dt.datetime.now()
+        config["PreviousVal"].to_pickle("Previous_Config.pkl")
+        config["CurrentVal"].to_pickle("Current_Config.pkl")
+        config["FollowingVal"].to_pickle("Following_Config.pkl")
+    return config["PreviousUI"], config["CurrentUI"], config["FollowingUI"], FieldName+" loaded at "+ str(time)
+    
+@app.callback(Output("LoadButtonRow","children"),Output("SaveButtonRow","children"),
+              Input("FieldName",'value'), prevent_initial_call=True)
+def FieldSet(FieldName):
+    loadbutton = html.Button("Load Config",id="LoadButton")
+    savebutton = html.Button("Save Config",id="SaveButton")
+    return loadbutton, savebutton
 
 app.layout = html.Div([
                 dbc.Row([
-                    dbc.Col([dbc.Row(dbc.Card(cnbf.CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date','Set Planting Date first'))),
-                             dbc.Row(dbc.Card(cnbf.CropInputs('Current_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first'))),
-                             dbc.Row(dbc.Card(cnbf.CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')))
+                    dbc.Col([dbc.Row(dbc.Card(cnbf.CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date','Set Planting Date first')),id="PreviousConfigUI"),
+                             dbc.Row(dbc.Card(cnbf.CropInputs('Current_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')),id="CurrentConfigUI"),
+                             dbc.Row(dbc.Card(cnbf.CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')),id="FollowingConfigUI")
                             ]),
-                    dbc.Col([dbc.Row(html.H1("Field Location")),
+                    dbc.Col([dbc.Row(html.H1("Field Name", id="FNtext",style=dict(display='flex', justifyContent='right'))),
+                             dbc.Row(dcc.Input(type="text", placeholder='Type field Name',min=0,id="FieldName")),
+                             dbc.Row(html.Button("Load Config",id="LoadButton",disabled=True),id="LoadButtonRow"),
+                             dbc.Row(html.Div("Last Load", id="LLtext",style=dict(display='flex', justifyContent='right'))),
+                             dbc.Row(html.Button("Save Config",id="SaveButton",disabled=True),id="SaveButtonRow"),
+                             dbc.Row(html.Div("Last Save", id="LStext",style=dict(display='flex', justifyContent='right'))),
+                             dbc.Row(html.H1("Field Location")),
                              dbc.Row(dcc.Dropdown(id="Location",options = MetDropDown,value='Lincoln')),
-                             dbc.Row(html.Button("Refresh",id="RefreshButton"))
+                             dbc.Row(html.Button("Refresh",id="RefreshButton",disabled=True))
                             ],width = 2),
                     dbc.Col([dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph'))),
                              dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph'))),
@@ -185,10 +248,3 @@ app.layout = html.Div([
                      ])
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
-# -
-
-pd.read_pickle("Previous_Config.pkl")
-
-pd.read_pickle("Current_Config.pkl")
-
-pd.read_pickle("Following_Config.pkl")
