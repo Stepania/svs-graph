@@ -31,8 +31,10 @@ import cufflinks as cf
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import copy
 import CropNBalFunctions as cnbf
-from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
+#from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
 from dash.exceptions import PreventUpdate
+
+from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
 
 # ## General components
 
@@ -100,62 +102,106 @@ CurrentConfig.to_pickle("Current_Config.pkl")
 FollowingConfig = pd.Series(index = cnbf.CropConfigs,data = [None]*13+[[]])
 FollowingConfig.to_pickle("Following_Config.pkl")
 
+import ast
+
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
 
-# Planting and Harvest date callback
-@app.callback(Output('Previous_EstablishDate','children'), Output('Previous_HarvestDate','children'),
-              Output('Current_EstablishDate','children'), Output('Current_HarvestDate','children'),
-              Output('Following_EstablishDate','children'), Output('Following_HarvestDate','children'),
-              Input('Previous_EstablishDate DP','date'), Input('Previous_HarvestDate DP','date'),
-              Input('Current_EstablishDate DP','date'), Input('Current_HarvestDate DP','date'),
-              Input('Following_EstablishDate DP','date'), Input('Following_HarvestDate DP','date'), prevent_initial_call=True)
-def StateCrop(pe,ph,ce,ch,fe,fh):
-    posc = 0
-    for d in [pe,ph,ce,ch,fe,fh]:
-        if d !=None:
-            prop_ID = list(dash.callback_context.inputs.keys())[posc]
-            pos,act = cnbf.splitprops(prop_ID,'.date')
-            cnbf.updateConfig([act[:-3]],[np.datetime64(d)],pos+"Config.pkl")
-        posc+=1
+def findindex(values):
+    ind = None
+    for p in range(len(values)):
+        if values[p] != None:
+            ind = p
+    return ind
+
+def posOfCaller(triggered):
+    pos = triggered[0]['prop_id'].replace('.value','').split(",")[2].split(":")[1].split("_")[0].replace('"','')+"_"
+    if pos== "Previous_":
+        baseIndex = 0
+    if pos== "Current_":
+        baseIndex = 1
+    if pos== "Following_":
+        baseIndex = 2
+    return pos, baseIndex
+
+def makeDF(inputs):
+    df = pd.DataFrame.from_dict(inputs,orient='index',columns=['date'])
+    df.index = [x.replace(".date","") for x in df.index]
+    return df
+
+def makeCropDataDF(outputs):
+    Outputs = []
+    for o1 in range(len(outputs)):
+        for o2 in range(len(outputs[o1])):
+            Outputs.append(outputs[o1][o2]['id']['id'])
+        df = pd.DataFrame(index=Outputs,data=Outputs,columns=['id']).rename_axis('id')
+        for o in Outputs:
+            pos,var = o.split("_")
+            df.loc[o,"pos"]=pos
+            df.loc[o,"var"]=var
+        df.set_index(["pos","var"],inplace=True,append=False,drop=False)
+    return df
+
+
+#Planting and Harvest date callback
+@app.callback(Output({"Group":"Crop","subGroup":"Event","RetType":"children","id":ALL},'children'), 
+              Input({"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), prevent_initial_call=True)
+def StateCrop(dates):
+    datedf = makeDF(dash.callback_context.inputs)
+    for d in datedf.index:
+        if datedf.loc[d,'date'] !=None:
+            pos, act = ast.literal_eval(d)['id'].split("_")
+            cnbf.updateConfig([act[:-3]],[np.datetime64(datedf.loc[d,'date'])],pos+"_Config.pkl")
     return cnbf.UpdateDatePickerOptions()
 
-for pos in cnbf.Positions:
-    # Crop type information callback
-    @app.callback(Output(pos+"Group","children"),Output(pos+"Crop","children"),Output(pos+"Type","children"),Output(pos+"SaleableYield",'children'),
-              Output(pos+"Units",'children'),Output(pos+"Product Type","children"), Output(pos+"FieldLoss","children"),Output(pos+"DressingLoss","children"),
-              Output(pos+"MoistureContent","children"),Output(pos+"EstablishStage",'children'),Output(pos+"HarvestStage",'children'),
-              Input(pos+"End use DD","value"),Input(pos+"Group DD","value"),Input(pos+"Crop DD","value"), Input(pos+"Type DD","value"),
+# Crop type information callback
+@app.callback(Output({"Group":"Crop","subGroup":"Catagory","RetType":"children","id":ALL},"children"),
+              Output({"Group":"Crop","subGroup":"data","RetType":"children","id":ALL},"children"),
+              Input({"Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
               prevent_initial_call=True)
-    def ChangeCrop(EndUseValue, GroupValue, CropValue, TypeValue):
-        pos = list(dash.callback_context.inputs.keys())[0].split('_')[0]+'_'
-        return cnbf.UpdateCropOptions(EndUseValue, GroupValue, CropValue, TypeValue, CropCoefficients, pos)
-    
-    # Defoliation callback
-    @app.callback(Output(pos+"Defoliation Dates","children"),
-                  Input(pos+"EstablishDate DP",'date'), Input(pos+"HarvestDate DP",'date'), prevent_initial_call=True)
-    def DefoliationOptions(Edate, Hdate):
-        pos = list(dash.callback_context.inputs.keys())[0].split('_')[0]+'_'
-        defDates = dcc.Checklist(id=pos+"Def Dates",options=[])
-        if (Edate != None) and (Hdate!= None):
-            cropMonths = pd.date_range(dt.datetime.strptime(str(Edate).split('T')[0],'%Y-%m-%d'),
-                                       dt.datetime.strptime(str(Hdate).split('T')[0],'%Y-%m-%d'),freq='MS')
-            DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-            defDates = dcc.Checklist(id=pos+"Def Dates", options = DefCheckMonths, value=[])
-        return defDates,
-    
-    # Crop yield information callback
-    for outp in cnbf.UIConfigMap.index:
-        @app.callback(Output(pos+outp,'value'),Input(pos+outp,'value'), prevent_initial_call=True)
-        def setInputValue(value):
-            prop_ID = list(dash.callback_context.inputs.keys())[0]
-            pos,outp = cnbf.splitprops(prop_ID,'.value')
-            cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"Config.pkl")
-            return value
+def ChangeCrop(values):
+    outputDF = makeCropDataDF(dash.callback_context.outputs_list)
+    outputDF.loc[:,'return'] = ""
+    inputDF = makeCropDataDF(dash.callback_context.inputs_list)
+    inputDF.loc[:,'values'] = values
+    return cnbf.UpdateCropOptions(inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
+
+# Defoliation callback
+@app.callback(Output({"Group":"Crop","subGroup":"defoliation","RetType":"children","id":ALL},"children"),
+              Input({"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
+              prevent_initial_call=True)
+def DefoliationOptions(dates):
+    datedf = makeDF(dash.callback_context.inputs)
+    defDatesAll = []
+    for d in datedf.index:
+            pos,act = ast.literal_eval(d)['id'].split("_")
+            print(pos),print(act)
+            if act == "HarvestDate DP":
+                
+                defDates = dcc.Checklist(id=pos+"_Def Dates",options=[])
+                config = pd.read_pickle(pos+"_Config.pkl")
+                if (config["EstablishDate"] != None) and (config["HarvestDate"]!= None):
+                    cropMonths = pd.date_range(dt.datetime.strptime(str(config["EstablishDate"]).split('T')[0],'%Y-%m-%d'),
+                                               dt.datetime.strptime(str(config["HarvestDate"]).split('T')[0],'%Y-%m-%d'),freq='MS')
+                    DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
+                    defDates = dcc.Checklist(id=pos+"_Def Dates", options = DefCheckMonths, value=[])
+                defDatesAll.append(defDates)
+    return defDatesAll[0], defDatesAll[1], defDatesAll[2]
+
+# Crop yield information callback
+@app.callback(Output({"Group":"Crop","subGroup":"data","RetType":"value","id":ALL},'value'),
+              Input({"Group":"Crop","subGroup":"data","RetType":"value","id":ALL},'value'), prevent_initial_call=True)
+def setInputValue(value):
+    #list(dash.callback_context.inputs.keys())[0]
+    pos,outp = dash.callback_context.inputs_list[0][0]['id']['id'].split("_")
+    print(pos), print(outp)
+    cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"_Config.pkl")
+    return value
 
 # Activate Load and Save buttons
 @app.callback(Output("LoadButtonRow","children"),Output("SaveButtonRow","children"),
-              Input("FieldName",'value'), prevent_initial_call=True)
+              Input({"id":"FieldName"},'value'), prevent_initial_call=True)
 def FieldSet(FieldName):
+    print(FieldName)
     loadbutton = html.Button("Load Config",id="LoadButton")
     savebutton = html.Button("Save Config",id="SaveButton")
     return loadbutton, savebutton
@@ -164,7 +210,7 @@ def FieldSet(FieldName):
 @app.callback(Output("PreviousConfigUI","children"),Output("CurrentConfigUI","children"),
               Output("FollowingConfigUI","children"),Output("FieldUI","children"),
               Output("LLtext","children"),
-              Input("LoadButton","n_clicks"),Input("FieldName",'value'), prevent_initial_call=True)
+              Input("LoadButton","n_clicks"),Input({"id":"FieldName"},'value'), prevent_initial_call=True)
 def loadConfig(n_clicks, FieldName):
     if n_clicks is None:
         raise PreventUpdate
@@ -181,7 +227,7 @@ def loadConfig(n_clicks, FieldName):
 @app.callback(Output("LStext",'children'), Input("SaveButton","n_clicks"), 
               Input("PreviousConfigUI","children"), Input("CurrentConfigUI","children"),
               Input("FollowingConfigUI","children"), Input("FieldUI",'children'),
-              Input("FieldName","value"),prevent_initial_call=True)
+              Input({"id":"FieldName"},"value"),prevent_initial_call=True)
 def SaveConfig(n_clicks,PreviousUI,CurrentUI,FollowingUI,FieldUI,FieldName):
     if n_clicks is None:
         raise PreventUpdate
@@ -201,18 +247,21 @@ def SaveConfig(n_clicks,PreviousUI,CurrentUI,FollowingUI,FieldUI,FieldName):
         return "Last Save " + str(time)
 
 # Field data callbacks
-for conf in FieldConfigs:
-    @app.callback(Output(conf,'value'),Input(conf,'value'), prevent_initial_call=True)
-    def setInputValue(value):
-        prop_ID = list(dash.callback_context.inputs.keys())[0]
-        conf = prop_ID.split(".")[0]
-        cnbf.updateConfig([conf],[value],"Field_Config.pkl")
-        return value
+@app.callback(Output({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
+              Input({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
+              prevent_initial_call=True)
+def setInputValue(values):
+    prop_ID = list(dash.callback_context.inputs.keys())[0]
+    conf = prop_ID.split(".")[0]
+    cnbf.updateConfig([conf],[value],"Field_Config.pkl")
+    return value
 
 # Validate config callback to activate "Update NBalance" button for running the model
 @app.callback(Output("RefreshButtonRow",'children'),
-              Input({"":"","",""},'value'), prevent_initial_call=True)
-def checkConfigAndEnableUpdate(PreSYInput):
+              Input({"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
+              Input({"Group":ALL,"subGroup":ALL,"RetType":"date","id":ALL},'date'),
+              prevent_initial_call=True)
+def checkConfigAndEnableUpdate(values,dates):
     return cnbf.validateConfigs()
 
 @app.callback(
@@ -249,18 +298,18 @@ app.layout = html.Div([
                              dbc.Row(dbc.Card(cnbf.CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')),id="FollowingConfigUI")
                             ]),
                     dbc.Col([dbc.Row(html.H1("Field Name", id="FNtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Input(type="text", placeholder='Type field Name',min=0,id="FieldName")),
+                             dbc.Row(dcc.Input(type="text", placeholder='Type field Name',min=0,id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"})),
                              dbc.Row(html.Button("Load Config",id="LoadButton",disabled=True),id="LoadButtonRow"),
                              dbc.Row(html.Div("Last Load", id="LLtext",style=dict(display='flex', justifyContent='right'))),
                              dbc.Row(html.Button("Save Config",id="SaveButton",disabled=True),id="SaveButtonRow"),
                              dbc.Row(html.Div("Last Save", id="LStext",style=dict(display='flex', justifyContent='right'))),
                              dbc.Row(html.H1("Field Location")),
-                             dbc.Row(dcc.Dropdown(id="Location",options = MetDropDown,placeholder='Select closest location')),
+                             dbc.Row(dcc.Dropdown(id={"Group":"Field","subGroup":"Place","RetType":"value","id":"Location"},options = MetDropDown,placeholder='Select closest location')),
                              dbc.Row(html.H1("Soil Test Values")),
                              dbc.Row(html.Div("HWEON test value", id="HWEONtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id="HWEON")),
+                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"HWEON"})),
                              dbc.Row(html.Div("MinN test value", id="MinNtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id="MinN")),
+                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"MinN"})),
                              dbc.Row(html.Button("Update NBalance",id="RefreshButton",disabled=True),id="RefreshButtonRow"),
                              dbc.Row(html.H1(""))
                             ],width = 2,id="FieldUI"),
@@ -272,15 +321,3 @@ app.layout = html.Div([
                      ])
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
-# -
-
-Positions = ['Previous_','Current_','Following_']
-NotSetComponents = 0
-for pos in Positions+['Field_']:
-    config=pd.read_pickle(pos+"Config.pkl")
-    for x in config:
-        NotSetComponents += x==None
-
-NotSetComponents
-
-pd.read_pickle("Field_Config.pkl")
