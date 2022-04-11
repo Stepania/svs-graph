@@ -87,8 +87,8 @@ def CropWaterGraph(cropWater):
 def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagoriesDropdown):
     c = pd.read_pickle(pos+"Config.pkl")
     PopulateDefaults = False
-    DropDownMembers = pd.Series(index = ['Group','Crop','Type'])
-    DropDownOptions = pd.Series(index = ['End use','Group','Crop','Type'])
+    DropDownMembers = pd.Series(index = ['Group','Crop','Type'],dtype=object)
+    DropDownOptions = pd.Series(index = ['End use','Group','Crop','Type'],dtype=object)
     Values = pd.Series(index = ['End use','Group','Crop','Type'],data=[None]*4)
     Values['End use'] = inputDF['End use DD']
     if (Values['End use']!=None):
@@ -112,17 +112,14 @@ def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagories
 
     ctx = dash.callback_context
     caller = ast.literal_eval(ctx.triggered[0]['prop_id'].replace(".value",""))['id']
-    print(caller)
-    print(Values['End use'])
-    print(Values['Group'])
-    print(Values['Crop'])
-    print(Values['Type'])
-    if (caller == 'End use DD') and (Values['End use'] != None):
+    if (caller == 'End use DD') & (Values['End use'] != None):
         Values, DropDownOptions = checkGroupOptions(Values, DropDownOptions, CropCoefficients,pos) 
     if (caller == 'Group DD') & (Values['Group'] != None):
         Values, DropDownOptions = checkCropOptions(Values,DropDownOptions,CropCoefficients,pos)
     if (caller == 'Crop DD') & (Values['Crop'] != None):
         Values, DropDownOptions = checkTypeOptions(Values,DropDownOptions,CropCoefficients,pos)
+    if (caller == 'Type DD') & (Values['Type'] != None):
+        DropDownOptions = setAllOptions(Values,DropDownOptions,CropCoefficients,pos)
 
     if Values['End use'] != None:
         outputDF['Group'] = dcc.Dropdown(options = DropDownOptions['Group'], value = Values['Group'],id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group DD"})
@@ -131,19 +128,6 @@ def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagories
     if Values['Crop'] != None:
         outputDF['Type'] = dcc.Dropdown(options = DropDownOptions['Type'], value = Values['Type'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type DD"})
     
-    print('End use')
-    print(outputDF['End use'])
-    print('Group')
-    print(outputDF['Group'])
-    print('Crop')
-    print(outputDF['Crop'])
-    print('Type')
-    print(outputDF['Type'])
-    print(Values['End use'])
-    print(Values['Group'])
-    print(Values['Crop'])
-    print(Values['Type'])
-
     PopulateDefaults = (Values["End use"]!=None) & (Values["Group"]!=None) & (Values["Crop"]!=None) & (Values["Type"]!=None)
     if (PopulateDefaults == True):
         CropFilter = (CropCoefficients.loc[:,'End use'] == Values["End use"])&(CropCoefficients.loc[:,'Group'] == Values["Group"])\
@@ -163,12 +147,15 @@ def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagories
         cnbf.updateConfig(["End use","Group","Crop","Type"],Values.values,pos+"Config.pkl")
     else:
         cnbf.updateConfig(["SaleableYield","UnitConverter","FieldLoss","DressingLoss","MoistureContent",
-                      "EstablishDate","EstablishStage","HarvestDate","HarvestStage"],
-                     [0,1,0,0,0,np.datetime64("NaT"),"Seed",np.datetime64("NaT"),"EarlyReproductive"],
+                      "EstablishStage","HarvestStage"],
+                     [0,1,0,0,0,"Seed","EarlyReproductive"],
                      pos+"Config.pkl")
+    print(dcc.Dropdown(options = DropDownOptions['Group'], value = Values['Group'],id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group DD"}))
+    print(dcc.Dropdown(options = DropDownOptions['Crop'], value = Values['Crop'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop DD"})        )
+    print(dcc.Dropdown(options = DropDownOptions['Type'], value = Values['Type'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type DD"}))
+    Positions = ['Previous_','Current_','Following_']
     return list(outputDF[0:4]), list(outputDF[4:12])
 
-Positions = ['Previous_','Current_','Following_']
 
 
 
@@ -176,7 +163,7 @@ Positions = ['Previous_','Current_','Following_']
 def checkGroupOptions(Values,DropDownOptions,CropCoefficients,pos):
     GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'End use'] == Values['End use'],"Group"].drop_duplicates().dropna().values
     GroupSelections.sort()
-    if len(GroupSelections)==1:
+    if len(GroupSelections)<=1:
         DropDownOptions['Group'] = [{'label':"No Groups for " +Values['End use']+" end use",'value': GroupSelections[0]}]
         Values['Group'] = GroupSelections[0]
         Values, DropDownOptions = checkCropOptions(Values,DropDownOptions,CropCoefficients,pos)
@@ -222,6 +209,26 @@ def checkTypeOptions(Values, DropDownOptions,CropCoefficients,pos):
         Values['Type'] = None
     return Values, DropDownOptions
 
+def setAllOptions(Values, DropDownOptions,CropCoefficients,pos):
+    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'End use'] == Values['End use'],"Group"].drop_duplicates().dropna().values
+    GroupSelections.sort()
+    if len(GroupSelections) <=1:
+        DropDownOptions['Group'] = [{'label':"No Groups for " +Values['End use']+" end use",'value': GroupSelections[0]}]
+    else:
+        DropDownOptions['Group'] = [{'label':i,'value':i} for i in GroupSelections] 
+    CropSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == Values['End use'])&(CropCoefficients.loc[:,'Group'] == Values['Group']),"Colloquial Name"].drop_duplicates().dropna().values
+    CropSelections.sort()
+    if len(CropSelections) <= 1:
+        DropDownOptions['Crop'] = [{'label':CropSelections[0]+" is the only " + Values['End use']+" crop",'value': CropSelections[0]}]
+    else: 
+        DropDownOptions['Crop'] = [{'label':i,'value':i} for i in CropSelections]
+    TypeSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == Values['End use'])&(CropCoefficients.loc[:,'Group'] == Values['Group'])&(CropCoefficients.loc[:,'Colloquial Name'] == Values['Crop']),"Type"].drop_duplicates().dropna().values
+    if len(TypeSelections) <= 1:
+        DropDownOptions['Type'] = [{'label':Values['Crop']+" has no Type options",'value': "General"}]
+    else:
+        DropDownOptions['Type'] = [{'label':i,'value':i} for i in TypeSelections]
+    return DropDownOptions
+
 CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
            'Typical Establish Stage', 'Typical Establish month', 'Typical Harvest Stage',
            'Typical Harvest month', 'Typical Yield', 'Typical Yield Units',
@@ -235,6 +242,59 @@ UnitsDropDown = [{'label':i,'value':Units.loc[i,'toKG/ha']} for i in Units.index
 Methods = ['Seed','Seedling','Vegetative','EarlyReproductive','MidReproductive','LateReproductive','Maturity','Late']
 EstablishStageDropdown = [{'label':i,'value':i} for i in Methods[:2]]
 HarvestStageDropdown = [{'label':i,'value':i} for i in Methods[2:]]
+
+# +
+Actions = ["EstablishDate", "HarvestDate"]
+def SetDatePicker(pos,act,PHtext,minDate,selDate,isEnabled):
+    if isEnabled:
+        DateP = dcc.DatePickerSingle(id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":act}, date = selDate, placeholder = PHtext,
+                                          min_date_allowed=minDate, max_date_allowed=dt.date(2025, 12, 31), 
+                                          initial_visible_month = selDate, display_format='D-MMM-YYYY')     
+    else:
+        DateP = dcc.DatePickerSingle(id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":act}, placeholder = PHtext, disabled = True)
+    return DateP
+
+def UpdateDatePickerOptions(datedf):
+    for d in datedf.index:
+        pos = d[0]
+        act = d[1]
+        cnbf.updateConfig([act],[np.datetime64(datedf.loc[d,'date'])],pos+"Config.pkl")
+    
+    posc=0
+    for pos in Positions:
+        for act in Actions:
+            if (pos == "Previous_") and (act == "EstablishDate"):
+                minDate = dt.date(2020,1,1)
+                isEnabled = datedf.loc[(pos,act),'date']!=None
+                selDate = datedf.loc[(pos,act),'date']#.astype(dt.datetime)
+                PHtext = 'Select Establish Date'
+            else:
+                isEnabled = datedf.iloc[posc-1,0]!=None
+                if isEnabled:
+                    minDate = datedf.iloc[posc-1,0]#.astype(dt.datetime)
+                else:
+                    minDate = dt.date(2020,1,1)
+                if datedf.iloc[posc,0]==None:
+                    selDate = None
+                else:    
+                    selDate = datedf.iloc[posc,0]#.astype(dt.datetime)
+                if act == 'HarvestDate':
+                    if isEnabled:
+                        PHtext = 'Select Harvest Date'
+                    else:
+                        PHtext = 'Set Prior Crop dates first'
+                if act == 'EstablishDate':
+                    if isEnabled:
+                        PHtext = 'Select Planting Date'
+                    else:
+                        PHtext = 'Set Prior Crop dates first'
+            globals()[pos+act] = SetDatePicker(pos,act,PHtext,minDate,selDate,isEnabled)
+            posc +=1
+    
+    return Previous_EstablishDate, Previous_HarvestDate, Current_EstablishDate, Current_HarvestDate, Following_EstablishDate, Following_HarvestDate
+
+
+
 # -
 
 # ## App layout and callbacks
@@ -258,23 +318,6 @@ import ast
 
 app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
 
-def findindex(values):
-    ind = None
-    for p in range(len(values)):
-        if values[p] != None:
-            ind = p
-    return ind
-
-def posOfCaller(triggered):
-    pos = triggered[0]['prop_id'].replace('.value','').split(",")[2].split(":")[1].split("_")[0].replace('"','')+"_"
-    if pos== "Previous_":
-        baseIndex = 0
-    if pos== "Current_":
-        baseIndex = 1
-    if pos== "Following_":
-        baseIndex = 2
-    return pos, baseIndex
-
 def makeDF(inputs):
     df = pd.DataFrame.from_dict(inputs,orient='index',columns=['date'])
     df.index = [x.replace(".date","") for x in df.index]
@@ -296,57 +339,67 @@ def makeFieldDataDF(names,values):
     df = pd.DataFrame(index=Names,data=values,columns=['values']).rename_axis('id')
     return df
 
+def makeDateDataDF(names,dates):
+    p=0
+    df = pd.DataFrame(index = range(0,6), columns=['pos','act','date'])
+    for n1 in range(len(names)):
+        for n2 in range(len(names[n1])):
+            df.loc[p,'pos'] = names[n1][n2]['id']['pos']
+            df.loc[p,'act'] = names[n1][n2]['id']['id']
+            df.loc[p,'date'] = dates[p]
+            p+=1
+    df.set_index(['pos','act'],inplace=True)
+    return df
+
 #Planting and Harvest date callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"children","id":ALL},'children'), 
-              Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), prevent_initial_call=True)
+@app.callback(Output({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"children","id":ALL},'children'), 
+              Input({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), prevent_initial_call=True)
 def StateCrop(dates):
-    datedf = makeDF(dash.callback_context.inputs)
-    for d in datedf.index:
-        if datedf.loc[d,'date'] !=None:
-            pos, act = ast.literal_eval(d)['id'].split("_")
-            cnbf.updateConfig([act[:-3]],[np.datetime64(datedf.loc[d,'date'])],pos+"_Config.pkl")
-    return cnbf.UpdateDatePickerOptions()
+    datedf = makeDateDataDF(dash.callback_context.inputs_list,dates)
+    return UpdateDatePickerOptions(datedf)
 
 # Crop type information callback
-@app.callback(Output({"pos":"Previous_","Group":"Crop","subGroup":"Catagory","RetType":"children","id":ALL},"children"),
-              Output({"pos":"Previous_","Group":"Crop","subGroup":"data","RetType":"children","id":ALL},"children"),
-              Input({"pos":"Previous_","Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":ALL},"children"),
+              Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"children","id":ALL},"children"),
+              Input({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
               prevent_initial_call=True)
 def ChangeCrop(values):
     if not any(values):
         raise PreventUpdate
     inputDF = makeCropDataDF(dash.callback_context.inputs_list,values)
     outputDF = makeCropDataDF(dash.callback_context.outputs_list,[""]*12)
-    return UpdateCropOptions("Previous_",inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
+    pos = dash.callback_context.outputs_list[0][0]['id']['pos']
+    return UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
 
-# Defoliation callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":ALL},"children"),
-              Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
-              prevent_initial_call=True)
-def DefoliationOptions(dates):
-    datedf = makeDF(dash.callback_context.inputs)
-    defDatesAll = []
-    for d in datedf.index:
-            pos,act = ast.literal_eval(d)['id'].split("_")
-            print(pos),print(act)
-            if act == "HarvestDate DP":
+# # Defoliation callback
+# @app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":ALL},"children"),
+#               Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
+#               prevent_initial_call=True)
+# def DefoliationOptions(dates):
+#     datedf = makeDF(dash.callback_context.inputs)
+#     defDatesAll = []
+#     for d in datedf.index:
+#             pos,act = ast.literal_eval(d)['id'].split("_")
+#             print(pos),print(act)
+#             if act == "HarvestDate DP":
                 
-                defDates = dcc.Checklist(id=pos+"_Def Dates",options=[])
-                config = pd.read_pickle(pos+"_Config.pkl")
-                if (config["EstablishDate"] != None) and (config["HarvestDate"]!= None):
-                    cropMonths = pd.date_range(dt.datetime.strptime(str(config["EstablishDate"]).split('T')[0],'%Y-%m-%d'),
-                                               dt.datetime.strptime(str(config["HarvestDate"]).split('T')[0],'%Y-%m-%d'),freq='MS')
-                    DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-                    defDates = dcc.Checklist(id=pos+"_Def Dates", options = DefCheckMonths, value=[])
-                defDatesAll.append(defDates)
-    return defDatesAll[0], defDatesAll[1], defDatesAll[2]
+#                 defDates = dcc.Checklist(id=pos+"_Def Dates",options=[])
+#                 config = pd.read_pickle(pos+"_Config.pkl")
+#                 if (config["EstablishDate"] != None) and (config["HarvestDate"]!= None):
+#                     cropMonths = pd.date_range(dt.datetime.strptime(str(config["EstablishDate"]).split('T')[0],'%Y-%m-%d'),
+#                                                dt.datetime.strptime(str(config["HarvestDate"]).split('T')[0],'%Y-%m-%d'),freq='MS')
+#                     DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
+#                     defDates = dcc.Checklist(id=pos+"_Def Dates", options = DefCheckMonths, value=[])
+#                 defDatesAll.append(defDates)
+#     return defDatesAll[0], defDatesAll[1], defDatesAll[2]
 
 # Crop yield information callback
 @app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'),
               Input({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'), prevent_initial_call=True)
 def setInputValue(value):
-    pos,outp = dash.callback_context.inputs_list[0][0]['id']['id'].split("_")
-    cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"_Config.pkl")
+    pos = dash.callback_context.inputs_list[0]['id']['pos']
+    outp = dash.callback_context.inputs_list[0]['id']['id']
+    cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"Config.pkl")
     return value
 
 # Activate Load and Save buttons
@@ -354,7 +407,6 @@ def setInputValue(value):
               Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"},'value'), 
               prevent_initial_call=True)
 def FieldSet(FieldName):
-    print(FieldName)
     loadbutton = html.Button("Load Config",id="LoadButton")
     savebutton = html.Button("Save Config",id="SaveButton")
     return loadbutton, savebutton
@@ -405,7 +457,6 @@ def SaveConfig(n_clicks,UIs,FieldName):
               Input({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
               prevent_initial_call=True)
 def setInputValue(values):
-    #print(dash.callback_context.inputs_list)
     inputDF = makeFieldDataDF(dash.callback_context.inputs_list,values)
     for v in inputDF.index:
         if inputDF.loc[v,'values'] != None:
@@ -480,3 +531,10 @@ app.layout = html.Div([
                      ])
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
+# -
+
+pd.read_pickle('Previous_Config.pkl')
+
+pd.read_pickle('Current_Config.pkl')
+
+pd.read_pickle('Following_Config.pkl')
