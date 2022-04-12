@@ -84,6 +84,7 @@ def CropWaterGraph(cropWater):
 
 
 # +
+Positions = ['Previous_','Current_','Following_']
 def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagoriesDropdown):
     c = pd.read_pickle(pos+"Config.pkl")
     PopulateDefaults = False
@@ -152,7 +153,6 @@ def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagories
                       "EstablishStage","HarvestStage"],
                      [0,1,0,0,0,"Seed","EarlyReproductive"],
                      pos+"Config.pkl")
-    Positions = ['Previous_','Current_','Following_']
     return list(outputDF[0:4]), list(outputDF[4:12])
 
 def checkGroupOptions(Values,DropDownOptions,CropCoefficients,pos):
@@ -341,26 +341,20 @@ def ChangeCrop(values):
     return UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
 
 # # Defoliation callback
-# @app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":ALL},"children"),
-#               Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
-#               prevent_initial_call=True)
-# def DefoliationOptions(dates):
-#     datedf = makeDF(dash.callback_context.inputs)
-#     defDatesAll = []
-#     for d in datedf.index:
-#             pos,act = ast.literal_eval(d)['id'].split("_")
-#             print(pos),print(act)
-#             if act == "HarvestDate DP":
-                
-#                 defDates = dcc.Checklist(id=pos+"_Def Dates",options=[])
-#                 config = pd.read_pickle(pos+"_Config.pkl")
-#                 if (config["EstablishDate"] != None) and (config["HarvestDate"]!= None):
-#                     cropMonths = pd.date_range(dt.datetime.strptime(str(config["EstablishDate"]).split('T')[0],'%Y-%m-%d'),
-#                                                dt.datetime.strptime(str(config["HarvestDate"]).split('T')[0],'%Y-%m-%d'),freq='MS')
-#                     DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-#                     defDates = dcc.Checklist(id=pos+"_Def Dates", options = DefCheckMonths, value=[])
-#                 defDatesAll.append(defDates)
-#     return defDatesAll[0], defDatesAll[1], defDatesAll[2]
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"Defoliation Dates"},"children"),
+              Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
+              prevent_initial_call=True)
+def DefoliationOptions(dates):
+    datedf = makeDF(dash.callback_context.inputs)
+    pos = dash.callback_context.outputs_list['id']['pos']
+    if (datedf.iloc[0,0] != None) and (datedf.iloc[1,0] != None):
+        cropMonths = pd.date_range(dt.datetime.strptime(str(datedf.iloc[0,0]),'%Y-%m-%d'),
+                                   dt.datetime.strptime(str(datedf.iloc[1,0]),'%Y-%m-%d'),freq='MS')
+        DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
+    else:
+        DefCheckMonths = []
+    print(DefCheckMonths)
+    return dcc.Checklist(id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"Def Dates"}, options = DefCheckMonths, value=[])
 
 # Crop yield information callback
 @app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'),
@@ -501,4 +495,6 @@ app.layout = html.Div([
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
 # -
+{"Group":"Crop","RetType":"date","id":"EstablishDate","pos":"Following_","subGroup":"Event"}["pos"]
 
+pd.read_pickle('Previous_Config.pkl')
