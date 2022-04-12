@@ -35,88 +35,8 @@ import cufflinks as cf
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import copy
 import ast
+import CropNBalUICompenents as uic
 
-Positions = ['Previous_','Current_','Following_']
-Actions = ["EstablishDate", "HarvestDate"]
-
-CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
-       'Typical Establish Stage', 'Typical Establish month', 'Typical Harvest Stage',
-       'Typical Harvest month', 'Typical Yield', 'Typical Yield Units',
-       'Yield type', 'Typical HI', 'HI Range',
-       'Moisture %', 'Typical Dressing Loss %', 'Typical Field Loss %', 'P Root', 'Max RD', 'A cover', 'rCover', 'k_ME',
-       'Nfixation', 'Root [N]', 'Stover [N]', 'Product [N]','Product [P]', 'Product [K]', 'Product [S]',
-       'Product [Ca]', 'Product [Mg]', 'Product [Na]', 'Product [Cl]',
-       'Stover [P]', 'Stover [K]', 'Stover [S]', 'Stover [Ca]', 'Stover [Mg]','Stover [Na]', 'Stover [Cl]']
-
-CropConfigs = ["EndUse","Group","Crop","Type","SaleableYield","Units","FieldLoss","DressingLoss",
-               "MoistureContent","EstablishDate","EstablishStage","HarvestDate","HarvestStage","DefoliationDates"]
-
-Units = pd.DataFrame(index = ['t/ha','kg/ha'],data=[1000,1],columns=['toKG/ha'])
-UnitsDropDown = [{'label':i,'value':Units.loc[i,'toKG/ha']} for i in Units.index]
-
-# UIConfigMap = pd.DataFrame([("SaleableYield","SaleableYield"),
-#                             ("Units","Units"),
-#                             ("FieldLoss","FieldLoss"),
-#                             ("DressingLoss","DressingLoss"),
-#                             ("MoistureContent","MoistureContent"),
-#                             ("EstablishStage","EstablishStage"),
-#                             ("HarvestStage","HarvestStage"),
-#                             ("DefoliationDates","DefoliationDates")]
-#                             ,columns=["UIID","ConfigID"])
-# UIConfigMap.set_index("UIID",inplace=True)
-
-def splitprops(prop_ID,propExt):
-    prop_ID = prop_ID.replace(propExt,'')
-    return prop_ID.split('_')[0]+'_', prop_ID.split('_')[1]
-
-def Generalcomponents():
-    # Read in Crop coefficients table and filter out nasty ones
-    CropCoefficients = pd.read_excel('C:\\GitHubRepos\\Overseer-testing\\CropCoefficients\\CropCoefficientTable.xlsx',skiprows=2, engine='openpyxl')
-
-    # Make lists of EndUse options
-    EndUseCatagories = CropCoefficients.loc[:,'EndUse'].drop_duplicates().dropna().values
-    EndUseCatagories.sort()
-
-    # Make some drop down lists
-    EndUseCatagoriesDropdown = [{'label':i,'value':i} for i in EndUseCatagories]
-    CropDropDown = [{'label':i,'value':i} for i in CropCoefficients.index]
-
-
-
-    # Read in weather data files
-    LincolnMet = pd.read_csv('C:\GitHubRepos\Weather\Broadfields\LincolnClean.met',delimiter = '\t')
-    LincolnMet.name = 'Lincoln'
-    GoreMet = pd.read_csv('C:\GitHubRepos\Weather\OtherLocations\GoreClean.met',delimiter = '\t')
-    GoreMet.name = 'Gore'
-    WhatatuMet = pd.read_csv('C:\GitHubRepos\Weather\OtherLocations\WhatatuClean.met',delimiter = '\t')
-    WhatatuMet.name = 'Napier'
-    PukekoheMet = pd.read_csv('C:\GitHubRepos\Weather\OtherLocations\PukekoheClean.met',delimiter = '\t')
-    PukekoheMet.name = 'Pukekohe'
-
-    #Load met files into dictionary 
-    metFiles ={'Pukekohe':PukekoheMet,'Whatatu':WhatatuMet,'Lincoln':LincolnMet,'Gore':GoreMet}
-
-    ## Function to calculate thermal time from temperature
-    def tt(x,b):
-        return max(0,x-b)
-
-    # Calculate thermal time for each met file and get date in correct format
-    for f in metFiles.keys():
-        metFiles[f].loc[:,'Date'] = pd.to_datetime(metFiles[f].loc[:,'Date'])
-        metFiles[f].loc[:,'tt'] = [tt(x,0) for x in metFiles[f].Temp]
-        metFiles[f].set_index('Date',inplace=True)
-
-    # Make a drop down list with met file options
-    MetDropDown = [{'label':i,'value':i} for i in metFiles.keys()]
-
-    MonthIndexs = pd.DataFrame(index = range(1,13),columns=['Name'],data=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])
-    
-    return CropCoefficients, EndUseCatagoriesDropdown, metFiles, MetDropDown, MonthIndexs
-
-
-Methods = ['Seed','Seedling','Vegetative','EarlyReproductive','MidReproductive','LateReproductive','Maturity','Late']
-EstablishStageDropdown = [{'label':i,'value':i} for i in Methods[:2]]
-HarvestStageDropdown = [{'label':i,'value':i} for i in Methods[2:]]
 #Empty arrays to hold example data
 BiomassScaller = []
 CoverScaller = []
@@ -153,12 +73,11 @@ Scallers.loc[:,'max'] = Scallers.max(axis=1)
 
 #Set up data frame with the assumed proportion of MAX DM accumulated at each reproductive stage
 PrpnMaxDM = [0.0066,0.015,0.5,0.75,0.86,0.95,0.9933,0.9995]
-StagePropns = pd.DataFrame(index = Methods, data = PrpnMaxDM,columns=['PrpnMaxDM']) 
+StagePropns = pd.DataFrame(index = uic.Methods, data = PrpnMaxDM,columns=['PrpnMaxDM']) 
 #Calculate the proportion of thermal time that each stage will accumulate at and graph
 for p in StagePropns.index:
     TTatProp = bisect_left(Scallers.scaller,StagePropns.loc[p,'PrpnMaxDM'])
     StagePropns.loc[p,'PrpnTt'] = TTatProp/T_mat
-
 
 def CalculateMedianTt(Start, End, Met):
     ## Calculate median thermaltime for location
@@ -179,7 +98,6 @@ def CalculateMedianTt(Start, End, Met):
     TTmed.index = pd.date_range(start=Start,periods=duration,freq='D',name='Date')
     TTmed.name = 'Tt'
     return TTmed
-    
 
 def CalculateCropOutputs(Tt, c, CropCoefficients):
 
@@ -275,83 +193,4 @@ def CalculateCropOutputs(Tt, c, CropCoefficients):
                 CropWater.loc[('Cover',d),'Values'] = CropWater.loc[('Cover',d),'Values'] * DefCovFact
                 DefCovFact = min(1.0,DefCovFact + Tt[d] * 0.00001)
     return CropN, CropWater, NComponentColors
-
-def validateConfigs():
-    UnSetComponents = 0
-    for pos in Positions+['field_']:
-        config=pd.read_pickle(pos+"Config.pkl")
-        for x in config:
-            UnSetComponents += x==None
-    if UnSetComponents == 0: 
-        return html.Button("Update NBalance",id="RefreshButton")
-    else: 
-        return html.Button("Update NBalance",id="RefreshButton",disabled=True)
-
-def updateConfig(keys,values,ConfigAddress):
-    #try:
-    Config = pd.read_pickle(ConfigAddress)
-    its = range(len(keys))
-    for i in its:
-        if values[i] != None:
-            Config[keys[i]] = values[i]
-    Config.to_pickle(ConfigAddress)
-
-
-def CropInputs(pos,EndUseCatagoriesDropdown,disableDates,EDatePHtext,HDatePHtext):
-    return dbc.CardBody([
-    dbc.Row([dbc.Col([html.Div('EndUse')], width=3, align='center'),
-             dbc.Col([html.Div('Group')], width=3, align='center'),
-             dbc.Col([html.Div('Crop')], width=3, align='center'),
-             dbc.Col([html.Div('Type')], width=3, align='center')]), 
-    dbc.Row([dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"EndUse"},options = EndUseCatagoriesDropdown,placeholder=' Select crop EndUse')],
-                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"EndUse"}, width=3 ,align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group"},options = [],style={"--bs-body-color": "#e83e8c"}, placeholder=' Select "EndUse" first' )], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Group"}, width=3 ,align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop"},options = [], placeholder=' Select "Group" first')], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Crop"}, width=3 ,align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type"},options = [], placeholder='')], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Type"}, width=3 ,align='center')]),
-    dbc.Row([dbc.Col([html.Div('Yield Data', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"ProductType"},style=dict(display='flex', justifyContent='right'))],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"Product Type"}, width=2, align='center'),
-             dbc.Col([dcc.Input(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SaleableYield"}, type="number",placeholder = "Enter Expected Yield",min=0,style={"width": "100%"})],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"SaleableYield"}, width=3, align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units"},options = [], placeholder = "")], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"Units"},width=2, align='center'),
-             dbc.Col([html.Div('at',style=dict(display='flex', justifyContent='center'))], width = 1, align='center'),
-             dbc.Col([dcc.Input(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"MoistureContent"}, type="number",min=0,max=96,style={"width": "100%"})],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"MoistureContent"}, align='center', width=1),
-             dbc.Col([html.Div('% Moisture',style=dict(display='flex', justifyContent='left'))], width=2, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Field Loss (%)',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.Input(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"FieldLoss"}, type="number",min=0,max=100)],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"FieldLoss"}, width=3, align='center'),
-             dbc.Col([html.Div('Dressing loss (%)',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.Input(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"DressingLoss"}, type="number",min=0,max=100)],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"DressingLoss"}, width=3, align='center')]), 
-    dbc.Row([
-             ]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Planting Date',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.DatePickerSingle(id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":"EstablishDate"}, min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = EDatePHtext, display_format='D-MMM-YYYY',disabled = disableDates)], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"children","id":"EstablishDate"},width=3, align='center'),
-             dbc.Col([html.Div('Planting method',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage"},options =[], placeholder='')],
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"EstablishStage"}, width=3, align='center')]), 
-    html.Br(),
-    dbc.Row([dbc.Col([html.Div('Harvest Date',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.DatePickerSingle(id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":"HarvestDate"}, min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = HDatePHtext,display_format='D-MMM-YYYY',disabled=True)], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"children","id":"HarvestDate"}, width=3, align='center'), 
-             dbc.Col([html.Div('Harvest Stage',style=dict(display='flex', justifyContent='right'))], width=3, align='center'),
-             dbc.Col([dcc.Dropdown(id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage"},options = [],placeholder='')], 
-                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"HarvestStage"}, width=3, align='center')]), 
-    dbc.Row([dbc.Col([html.Div('Defoliatoin Dates')], width=3, align='center'),
-            dbc.Col([dcc.Checklist(id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"value","id":"DefoliationDates"},options=[])],
-                    id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"})]), 
-    # html.Br(),
-    ])
-
 
