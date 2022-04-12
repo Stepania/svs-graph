@@ -179,7 +179,8 @@ def CalculateCropOutputs(Tt, c, CropCoefficients):
     CropWater = pd.DataFrame(index = pd.MultiIndex.from_product([['Cover','RootDepth'],Tt.index],
                                                         names=['Component','Date']),columns=['Values'])
     ## Calculate model parameters 
-    Tt_Harv = Tt[c['HarvestDate']] - Tt[c['EstablishDate']] 
+    Tt = Tt- Tt[c['EstablishDate']] 
+    Tt_Harv = Tt[c['HarvestDate']] 
     Tt_estab = Tt_Harv * (StagePropns.loc[c['EstablishStage'],'PrpnTt']/StagePropns.loc[c['HarvestStage'],'PrpnTt'])
     CropTt = Tt+Tt_estab #Create array of Tt accumulations during crop duration.
     Xo_Biomass = (Tt_Harv + Tt_estab) *.45 * (1/StagePropns.loc[c["HarvestStage"],'PrpnTt'])
@@ -252,6 +253,65 @@ def CalculateCropOutputs(Tt, c, CropCoefficients):
                 DefCovFact = min(1.0,DefCovFact + Tt[d] * 0.00001)
     return CropN, CropWater, NComponentColors
 
+def CalculateResidueMineralisation(Tt,date, amounts):
+    ResidueN = pd.DataFrame(index = pd.MultiIndex.from_product([BiomassComponents,Tt.index],
+                                                        names=['Component','Date']),columns=['Values'])
+    p = 0.1
+    for d in Tt.index[1:]:
+        yesterday = d-dt.timedelta(days=1) 
+        ResidualN.loc[('Root',d),'Values'] = ResidualN.loc[('Root',yesterday),'Values']
+        ResidualN.loc[('Stover',d),'Values'] = ResidualN.loc[('Stover',yesterday),'Values']
+        ResidualN.loc[('FieldLoss',d),'Values'] = ResidualN.loc[('FieldLoss',yesterday),'Values']
+        DeltaRootN[d] = ResidualN.loc[('Root',d),'Values'] * (Tt[d] - Tt[yesterday])* p
+        DeltaStoverN[d] = ResidualN.loc[('Stover',d),'Values'] * (Tt[d] - Tt[yesterday])* p
+        DeltaFieldLossN[d] = ResidualN.loc[('FieldLoss',d),'Values'] * (Tt[d] - Tt[yesterday])* p
+        DeltaResidueN[d] = DeltaRootN[d] + DeltaStoverN[d] + DeltaFieldLossN[d]
+        ResidualN.loc[('Root',d),'Values'] -= DeltaRootN[d]
+        ResidualN.loc[('Stover',d),'Values'] -= DeltaStoverN[d]
+        ResidualN.loc[('FieldLoss',d),'Values'] -= DeltaFieldLossN[d]
+        for c in [PriorConfig,CurrentConfig,FollowingConfig]:
+            if d == (c["HarvestDate"] + dt.timedelta(days=7)):
+                ResidualN.loc[('Root',d),'Values'] += c['RootN']
+                ResidualN.loc[('Stover',d),'Values'] += c['StoverN']
+                ResidualN.loc[('FieldLoss',d),'Values'] += c['FieldLossN']
+    ResidualN.loc['Stover','Values'] = (ResidualN.loc['Root','Values'] + ResidualN.loc['Stover','Values']).values
+    ResidualN.loc['FieldLoss','Values'] = (ResidualN.loc['Stover','Values'] + ResidualN.loc['FieldLoss','Values']).values
+
+def CalculateSOMMineralisation():
+    p = 0.1
+    for d in Tt.index[1:]:
+        yesterday = d - dt.timedelta(days=1)
+        DeltaSOMN[d] =  FieldConfig['HWEON'] * (Tt[d] - Tt[yesterday])* p
+    CurrentConfig["SOMN"] = DeltaSOMN[CurrentConfig["EstablishDate"]:CurrentConfig["HarvestDate"]].sum()
+
+def CalculateSoilMineralN():
+    FinalN = 30
+    Eff = 0.8
+    splits = 3
+    duration = (CurrentConfig['HarvestDate']-CurrentConfig['EstablishDate']).days
+    InCropMineralisation = CurrentConfig[['RootN',"StoverN","FieldLossN","SOMN"]].sum()
+    NFertReq = (CurrentConfig["CropN"] + FinalN) - FieldConfig["MineralN"] - InCropMineralisation
+    NFertReq = NFertReq * 1/Eff
+    NFertReq = np.ceil(NFertReq)
+    print(NFertReq)
+    NAppn = NFertReq/splits
+    plength = duration/(splits + 1)
+    xlocs = [0]
+    plength = np.ceil(duration/(splits + 1))
+    xlocs = []
+    for x in range(1,int(splits+1)):
+        xlocs.append(x * plength)
+    FertApplied = 0
+    FertAppNo = 0
+    maxSoilN = max(FieldConfig["MineralN"],FinalN + NAppn)
+    SoilN[CurrentConfig['EstablishDate']] = FieldConfig["MineralN"]
+    for d in SoilN[CurrentConfig['EstablishDate']:].index[1:]:
+        yesterday = d - dt.timedelta(days=1)
+        CropNd = np.nan_to_num(CropN.loc['TotalCrop','Values'].diff()[d],0)
+        SoilN[d] = SoilN[yesterday] + DeltaResidueN[d] + DeltaSOMN[d] - CropNd 
+        if (SoilN[yesterday] > SoilN[d]) and (SoilN[d] < FinalN) and (FertApplied < NFertReq): #and ((CropPatterns.iloc[d-1,4]-CropPatterns.iloc[d,4])<0):
+            SoilN[d] += NAppn * Eff
+            FertApplied += NAppn
 
 
 # -
