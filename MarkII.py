@@ -89,77 +89,74 @@ def UpdateCropOptions(pos, inputDF, outputDF, CropCoefficients, EndUseCatagories
     c = pd.read_pickle(pos+"Config.pkl")
     PopulateDefaults = False
     DropDownMembers = pd.Series(index = ['Group','Crop','Type'],dtype=object)
-    DropDownOptions = pd.Series(index = ['End use','Group','Crop','Type'],dtype=object)
+    DropDownOptions = pd.Series(index = ['EndUse','Group','Crop','Type'],dtype=object)
     
     #Set up values series
-    Values = pd.Series(index = ['End use','Group','Crop','Type'],data=[None]*4)
-    Values['End use'] = inputDF['End use DD']
-    if (Values['End use']!=None):
-        Values['Group'] = inputDF['Group DD']
+    Values = pd.Series(index = ['EndUse','Group','Crop','Type'],data=[None]*4)
+    Values['EndUse'] = inputDF['EndUse']
+    if (Values['EndUse']!=None):
+        Values['Group'] = inputDF['Group']
         if (Values['Group']!= None):
-            Values['Crop'] = inputDF['Crop DD']
+            Values['Crop'] = inputDF['Crop']
             if (Values['Crop'] != None):
-                Values['Type'] = inputDF['Type DD']
+                Values['Type'] = inputDF['Type']
 
     # Default drop down configs
-    outputDF['End use'] = dcc.Dropdown(value = Values['End use'], options = EndUseCatagoriesDropdown,placeholder=' Select crop End use',id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"End use DD"})
-    outputDF['Group'] = dcc.Dropdown(options = [], disabled = True,style={"--bs-body-color": "#e83e8c"}, placeholder='Choose "End use" first', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group DD"})
-    outputDF['Crop'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "End use" first', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop DD"})
-    outputDF['Type'] = dcc.Dropdown(options = [], disabled = True, placeholder='No Type Choices', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type DD"})
+    outputDF['EndUse'] = dcc.Dropdown(value = Values['EndUse'], options = EndUseCatagoriesDropdown,placeholder=' Select crop EndUse',id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"EndUse"})
+    outputDF['Group'] = dcc.Dropdown(options = [], disabled = True,style={"--bs-body-color": "#e83e8c"}, placeholder='Choose "EndUse" first', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group"})
+    outputDF['Crop'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "EndUse" first', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop"})
+    outputDF['Type'] = dcc.Dropdown(options = [], disabled = True, placeholder='No Type Choices', id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type"})
     
     # Set drop down configs based on selected values
-    if Values['End use'] != None:
+    if Values['EndUse'] != None:
         Values, DropDownOptions = checkGroupOptions(Values, DropDownOptions, CropCoefficients,pos) 
-        outputDF['Group'] = dcc.Dropdown(options = DropDownOptions['Group'], value = Values['Group'],id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group DD"})
-        print('g set')
-        print(Values['Group'] != None)
+        outputDF['Group'] = dcc.Dropdown(options = DropDownOptions['Group'], value = Values['Group'],id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group"})
         if Values['Group'] != None:
             Values, DropDownOptions = checkCropOptions(Values,DropDownOptions,CropCoefficients,pos)
-            outputDF['Crop'] = dcc.Dropdown(options = DropDownOptions['Crop'], value = Values['Crop'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop DD"})        
-            print('c set')
+            outputDF['Crop'] = dcc.Dropdown(options = DropDownOptions['Crop'], value = Values['Crop'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop"})        
             if Values['Crop'] != None:
                 Values, DropDownOptions = checkTypeOptions(Values,DropDownOptions,CropCoefficients,pos)
-                outputDF['Type'] = dcc.Dropdown(options = DropDownOptions['Type'], value = Values['Type'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type DD"})
-                print('t set')
-
+                print(Values)
+                outputDF['Type'] = dcc.Dropdown(options = DropDownOptions['Type'], value = Values['Type'], id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type"})
+        
     #Enable Crop data fields and populate with default values if all crop selection catagories are made
-    PopulateDefaults = (Values["End use"]!=None) & (Values["Group"]!=None) & (Values["Crop"]!=None) & (Values["Type"]!=None)
+    PopulateDefaults = (Values["EndUse"]!=None) & (Values["Group"]!=None) & (Values["Crop"]!=None) & (Values["Type"]!=None)
     if (PopulateDefaults == True):
-        CropFilter = (CropCoefficients.loc[:,'End use'] == Values["End use"])&(CropCoefficients.loc[:,'Group'] == Values["Group"])\
+        CropFilter = (CropCoefficients.loc[:,'EndUse'] == Values["EndUse"])&(CropCoefficients.loc[:,'Group'] == Values["Group"])\
                      &(CropCoefficients.loc[:,'Colloquial Name'] == Values["Crop"])&(CropCoefficients.loc[:,'Type'] == Values["Type"])
         Params = pd.Series(index=CropCoefficients.loc[CropFilter,CropParams].columns, data = CropCoefficients.loc[CropFilter,CropParams].values[0])
-        outputDF['SaleableYield'] = dcc.Input(type="number",disabled = False, value = Params["Typical Yield"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SYInput"})
-        outputDF['Units'] = dcc.Dropdown(options = UnitsDropDown, disabled = False, value =Units.loc[Params["Typical Yield Units"],"toKG/ha"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units DD"})
-        outputDF['Product Type'] = html.Div(Params['Yield type'] + " yield", id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"PTtext"},style=dict(display='flex', justifyContent='right'))
-        outputDF['FieldLoss'] = dcc.Input(type="number",disabled = False, value = Params["Typical Field Loss %"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "FLInput"})
-        outputDF['DressingLoss'] = dcc.Input(type="number",disabled = False, value = Params["Typical Dressing Loss %"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "DLInput"})
-        outputDF['MoistureContent'] = dcc.Input(type="number",disabled = False, value = (round(Params["Moisture %"],0)),min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "MCInput"},style={"width": "100%"})
-        outputDF['EstablishStage'] = dcc.Dropdown(options = EstablishStageDropdown, disabled = False, value =Params["Typical Establish Stage"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage DD"})
-        outputDF['HarvestStage'] = dcc.Dropdown(options = HarvestStageDropdown, disabled = False, value =Params["Typical Harvest Stage"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage DD"})
-        cnbf.updateConfig(["SaleableYield","UnitConverter","FieldLoss","DressingLoss","MoistureContent","EstablishStage","HarvestStage"],
+        outputDF['SaleableYield'] = dcc.Input(type="number",disabled = False, value = Params["Typical Yield"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SaleableYield"})
+        outputDF['Units'] = dcc.Dropdown(options = UnitsDropDown, disabled = False, value =Units.loc[Params["Typical Yield Units"],"toKG/ha"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units"})
+        outputDF['ProductType'] = html.Div(Params['Yield type'] + " yield", id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"ProductType"},style=dict(display='flex', justifyContent='right'))
+        outputDF['FieldLoss'] = dcc.Input(type="number",disabled = False, value = Params["Typical Field Loss %"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "FieldLoss"})
+        outputDF['DressingLoss'] = dcc.Input(type="number",disabled = False, value = Params["Typical Dressing Loss %"],min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "DressingLoss"})
+        outputDF['MoistureContent'] = dcc.Input(type="number",disabled = False, value = (round(Params["Moisture %"],0)),min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "MoistureContent"},style={"width": "100%"})
+        outputDF['EstablishStage'] = dcc.Dropdown(options = EstablishStageDropdown, disabled = False, value =Params["Typical Establish Stage"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage"})
+        outputDF['HarvestStage'] = dcc.Dropdown(options = HarvestStageDropdown, disabled = False, value =Params["Typical Harvest Stage"], id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage"})
+        cnbf.updateConfig(["SaleableYield","Units","FieldLoss","DressingLoss","MoistureContent","EstablishStage","HarvestStage"],
                      [Params["Typical Yield"],Units.loc[Params["Typical Yield Units"],"toKG/ha"],Params["Typical Field Loss %"],
                       Params["Typical Dressing Loss %"],Params["Moisture %"],Params["Typical Establish Stage"],Params["Typical Harvest Stage"]],pos+"Config.pkl")
-        cnbf.updateConfig(["End use","Group","Crop","Type"],Values.values,pos+"Config.pkl")
+        cnbf.updateConfig(["EndUse","Group","Crop","Type"],Values.values,pos+"Config.pkl")
     else:
-        outputDF['SaleableYield'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SYInput"})
-        outputDF['Units'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units DD"})
-        outputDF['Product Type'] = html.Div("Yield Data", id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"PTtext"} ,style=dict(display='flex', justifyContent='right'))
-        outputDF['FieldLoss'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "FLInput"})
-        outputDF['DressingLoss'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "DLInput"})
-        outputDF['MoistureContent'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "MCInput"},style={"width": "100%"})
-        outputDF['EstablishStage'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage DD"})
-        outputDF['HarvestStage'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage DD"})
-        cnbf.updateConfig(["SaleableYield","UnitConverter","FieldLoss","DressingLoss","MoistureContent",
+        outputDF['SaleableYield'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SaleableYield"})
+        outputDF['Units'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units"})
+        outputDF['ProductType'] = html.Div("Yield Data", id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"ProductType"} ,style=dict(display='flex', justifyContent='right'))
+        outputDF['FieldLoss'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "FieldLoss"})
+        outputDF['DressingLoss'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "DressingLoss"})
+        outputDF['MoistureContent'] = dcc.Input(type="number",disabled = True, placeholder='Choose "Crop" first',min=0,id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "MoistureContent"},style={"width": "100%"})
+        outputDF['EstablishStage'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage"})
+        outputDF['HarvestStage'] = dcc.Dropdown(options = [], disabled = True, placeholder='Choose "Crop" first', id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage"})
+        cnbf.updateConfig(["SaleableYield","Units","FieldLoss","DressingLoss","MoistureContent",
                       "EstablishStage","HarvestStage"],
                      [0,1,0,0,0,"Seed","EarlyReproductive"],
                      pos+"Config.pkl")
     return list(outputDF[0:4]), list(outputDF[4:12])
 
 def checkGroupOptions(Values,DropDownOptions,CropCoefficients,pos):
-    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'End use'] == Values['End use'],"Group"].drop_duplicates().dropna().values
+    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'EndUse'] == Values['EndUse'],"Group"].drop_duplicates().dropna().values
     GroupSelections.sort()
     if len(GroupSelections)<=1:
-        DropDownOptions['Group'] = [{'label':"No Groups for " +Values['End use']+" end use",'value': GroupSelections[0]}]
+        DropDownOptions['Group'] = [{'label':"No Groups for " +Values['EndUse']+" EndUse",'value': GroupSelections[0]}]
         Values['Group'] = GroupSelections[0]
         Values, DropDownOptions = checkCropOptions(Values,DropDownOptions,CropCoefficients,pos)
     else:
@@ -169,13 +166,13 @@ def checkGroupOptions(Values,DropDownOptions,CropCoefficients,pos):
     return Values, DropDownOptions
 
 def checkCropOptions(Values,DropDownOptions,CropCoefficients,pos):
-    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'End use'] == Values['End use'],"Group"].drop_duplicates().dropna().values
+    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'EndUse'] == Values['EndUse'],"Group"].drop_duplicates().dropna().values
     GroupSelections.sort()
     DropDownOptions['Group'] = [{'label':i,'value':i} for i in GroupSelections] 
-    CropSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == Values['End use'])&(CropCoefficients.loc[:,'Group'] == Values['Group']),"Colloquial Name"].drop_duplicates().dropna().values
+    CropSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'EndUse'] == Values['EndUse'])&(CropCoefficients.loc[:,'Group'] == Values['Group']),"Colloquial Name"].drop_duplicates().dropna().values
     CropSelections.sort()
     if len(CropSelections) <= 1:
-            DropDownOptions['Crop'] = [{'label':CropSelections[0]+" is the only " + Values['End use']+" crop",'value': CropSelections[0]}]
+            DropDownOptions['Crop'] = [{'label':CropSelections[0]+" is the only " + Values['EndUse']+" crop",'value': CropSelections[0]}]
             Values['Crop'] = CropSelections[0]
             Values, DropDownOptions = checkTypeOptions(Values, DropDownOptions,CropCoefficients,pos)
     else:
@@ -184,21 +181,21 @@ def checkCropOptions(Values,DropDownOptions,CropCoefficients,pos):
     return Values, DropDownOptions
 
 def checkTypeOptions(Values,DropDownOptions,CropCoefficients,pos):
-    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'End use'] == Values['End use'],"Group"].drop_duplicates().dropna().values
+    GroupSelections = CropCoefficients.loc[CropCoefficients.loc[:,'EndUse'] == Values['EndUse'],"Group"].drop_duplicates().dropna().values
     GroupSelections.sort()
     DropDownOptions['Group'] = [{'label':i,'value':i} for i in GroupSelections] 
-    CropSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == Values['End use'])&(CropCoefficients.loc[:,'Group'] == Values['Group']),"Colloquial Name"].drop_duplicates().dropna().values
+    CropSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'EndUse'] == Values['EndUse'])&(CropCoefficients.loc[:,'Group'] == Values['Group']),"Colloquial Name"].drop_duplicates().dropna().values
     CropSelections.sort()
     DropDownOptions['Crop'] = [{'label':i,'value':i} for i in CropSelections]
-    TypeSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'End use'] == Values['End use'])&(CropCoefficients.loc[:,'Group'] == Values['Group'])&(CropCoefficients.loc[:,'Colloquial Name'] == Values['Crop']),"Type"].drop_duplicates().dropna().values
+    TypeSelections = CropCoefficients.loc[(CropCoefficients.loc[:,'EndUse'] == Values['EndUse'])&(CropCoefficients.loc[:,'Group'] == Values['Group'])&(CropCoefficients.loc[:,'Colloquial Name'] == Values['Crop']),"Type"].drop_duplicates().dropna().values
     if len(TypeSelections) <= 1:
-            DropDownOptions['Type'] = [{'label':Values['Crop']+" has no Type options",'value': "General"}]
+            DropDownOptions['Type'] = [{'label':Values['Crop']+" has no Type options",'value': TypeSelections[0]}]
             Values['Type'] = TypeSelections[0]
     else:
         DropDownOptions['Type'] = [{'label':i,'value':i} for i in TypeSelections]
     return Values, DropDownOptions
 
-CropParams = ['End use', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
+CropParams = ['EndUse', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'Specific epithet', 'Sub species',
            'Typical Establish Stage', 'Typical Establish month', 'Typical Harvest Stage',
            'Typical Harvest month', 'Typical Yield', 'Typical Yield Units',
            'Yield type', 'Typical HI', 'HI Range',
@@ -340,21 +337,19 @@ def ChangeCrop(values):
     pos = dash.callback_context.outputs_list[0][0]['id']['pos']
     return UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
 
-# # Defoliation callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"Defoliation Dates"},"children"),
+# Defoliation callback
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"},"children"),
               Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
               prevent_initial_call=True)
 def DefoliationOptions(dates):
     datedf = makeDF(dash.callback_context.inputs)
     pos = dash.callback_context.outputs_list['id']['pos']
+    DefCheckMonths = []
     if (datedf.iloc[0,0] != None) and (datedf.iloc[1,0] != None):
         cropMonths = pd.date_range(dt.datetime.strptime(str(datedf.iloc[0,0]),'%Y-%m-%d'),
                                    dt.datetime.strptime(str(datedf.iloc[1,0]),'%Y-%m-%d'),freq='MS')
         DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-    else:
-        DefCheckMonths = []
-    print(DefCheckMonths)
-    return dcc.Checklist(id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"Def Dates"}, options = DefCheckMonths, value=[])
+    return [dcc.Checklist(id={"pos":"Previous_","Group":"Crop","subGroup":"defoliation","RetType":"value","id":"DefoliationDates"}, options = DefCheckMonths, value=[])]
 
 # Crop yield information callback
 @app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'),
@@ -362,7 +357,7 @@ def DefoliationOptions(dates):
 def setInputValue(value):
     pos = dash.callback_context.inputs_list[0]['id']['pos']
     outp = dash.callback_context.inputs_list[0]['id']['id']
-    cnbf.updateConfig([cnbf.UIConfigMap.loc[outp,"ConfigID"]],[value],pos+"Config.pkl")
+    cnbf.updateConfig([outp],[value],pos+"Config.pkl")
     return value
 
 # Activate Load and Save buttons
@@ -495,6 +490,4 @@ app.layout = html.Div([
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
 # -
-{"Group":"Crop","RetType":"date","id":"EstablishDate","pos":"Following_","subGroup":"Event"}["pos"]
-
 pd.read_pickle('Previous_Config.pkl')
