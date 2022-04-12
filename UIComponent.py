@@ -58,6 +58,7 @@ Methods = ['Seed','Seedling','Vegetative','EarlyReproductive','MidReproductive',
 EstablishStageDropdown = [{'label':i,'value':i} for i in Methods[:2]]
 HarvestStageDropdown = [{'label':i,'value':i} for i in Methods[2:]]
 
+
 def splitprops(prop_ID,propExt):
     prop_ID = prop_ID.replace(propExt,'')
     return prop_ID.split('_')[0]+'_', prop_ID.split('_')[1]
