@@ -324,13 +324,13 @@ FieldConfigs = ['FieldName','Location','HWEON','MinN']
 FieldConfig = pd.Series(index = FieldConfigs, data = [""]+[None]*3)
 FieldConfig.to_pickle("Field_Config.pkl")
 
-PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*13+[[]])
+PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
 PreviousConfig.to_pickle("Previous_Config.pkl")
 
-CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*13+[[]])
+CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
 CurrentConfig.to_pickle("Current_Config.pkl")
 
-FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*13+[[]])
+FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
 FollowingConfig.to_pickle("Following_Config.pkl")
 
 import ast
@@ -351,10 +351,11 @@ def StateCrop(dates):
               Input({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
               prevent_initial_call=True)
 def ChangeCrop(values):
+    print('tick')
     if not any(values):
         raise PreventUpdate
     inputDF = uic.makeDataSeries(dash.callback_context.inputs_list,values)
-    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*12)
+    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*13)
     pos = dash.callback_context.outputs_list[0][0]['id']['pos']
     return uic.UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
 
@@ -384,10 +385,11 @@ def setInputValue(value):
 
 # Activate Load and Save buttons
 @app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":ALL},"children"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"},'value'), 
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
               prevent_initial_call=True)
-def FieldSet(value):
-    if value is None:
+def FieldSet(selection,inputval):
+    if (selection == None) and (inputval  == None):
         raise PreventUpdate
     else:
         loadbutton = html.Button("Load Config",id="LoadButton")
@@ -398,12 +400,17 @@ def FieldSet(value):
 @app.callback(Output({"Group":"UI","id":ALL},"children"),
               Output("LLtext","children"),
               Input("LoadButton","n_clicks"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"},'value'), 
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
               prevent_initial_call=True)
-def loadConfig(n_clicks, FieldName):
+def loadConfig(n_clicks,selection,inputval):
     if n_clicks is None:
         raise PreventUpdate
     else:
+        if selection != None:
+            FieldName = selection
+        else:
+            FieldName = inputval
         config = pd.read_pickle(FieldName+"_SavedConfig.pkl")
         time = dt.datetime.now()
         config["PreviousVal"].to_pickle("Previous_Config.pkl")
@@ -413,14 +420,20 @@ def loadConfig(n_clicks, FieldName):
     return (config["PreviousUI"], config["CurrentUI"], config["FollowingUI"], config["FieldUI"]), FieldName+" loaded at "+ str(time)
 
 # Config Save callback
-@app.callback(Output("LStext",'children'), Input("SaveButton","n_clicks"), 
+@app.callback(Output("LStext",'children'), 
+              Input("SaveButton","n_clicks"), 
               Input({"Group":"UI","id":ALL},"children"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"},"value"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
               prevent_initial_call=True)
-def SaveConfig(n_clicks,UIs,FieldName):
+def SaveConfig(n_clicks,UIs,selection,inputval):
     if n_clicks is None:
         raise PreventUpdate
     else:
+        if selection != None:
+            FieldName = selection
+        else:
+            FieldName = inputval
         ConfigDF = pd.Series(index=["FieldUI","PreviousUI","CurrentUI","FollowingUI","FieldVal","PreviousVal","CurrentVal","FollowingVal"],dtype=object)
         ConfigDF["PreviousUI"] = UIs[0]
         ConfigDF["CurrentUI"] = UIs[1]
@@ -446,12 +459,13 @@ def setInputValue(values):
             uic.updateConfig([v],[inputDF[v]],"Field_Config.pkl")
     return list(inputDF.values)
 
-# Validate config callback to activate "Update NBalance" button for running the model
+#Validate config callback to activate "Update NBalance" button for running the model
 @app.callback(Output("RefreshButtonRow",'children'),
+              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
+              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"date","id":ALL},'date'),
               Input({"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
-              Input({"Group":ALL,"subGroup":ALL,"RetType":"date","id":ALL},'date'),
               prevent_initial_call=True)
-def checkConfigAndEnableUpdate(values,dates):
+def checkConfigAndEnableUpdate(values,dates,field):
     return uic.validateConfigs()
 
 @app.callback(
@@ -499,7 +513,8 @@ app.layout = html.Div([
                                      id={"Group":"UI","id":"FollowingConfigUI"})
                             ]),
                     dbc.Col([dbc.Row(html.H1("Field Name", id="FNtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Type or select field Name', id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldName"})),
+                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Select saved field', id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"})),
+                             dbc.Row(dcc.Input(type="text",debounce=True, placeholder='or type new field name',min=0,id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"})),
                              dbc.Row(html.Button("Load Config", disabled=True, id="LoadButton"),
                                      id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"LoadButton"}),
                              dbc.Row(html.Div("Last Load", id="LLtext",style=dict(display='flex', justifyContent='right'))),
@@ -525,19 +540,10 @@ app.layout = html.Div([
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
 # -
-PreviousConfig = pd.read_pickle("Previous_Config.pkl")
-CurrentConfig = pd.read_pickle("Current_Config.pkl")
-FollowingConfig = pd.read_pickle("Following_Config.pkl")
-FieldConfig = pd.read_pickle("Field_Config.pkl")
-Tt = cnbf.CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
-        
+pd.read_pickle('Previous_Config.pkl').isnull().sum()
 
-Tt.plot()
+pd.read_pickle('Current_Config.pkl').isnull().sum()
 
-PreviousCropN, PreviousCropWater, PreviousNComponentColors = CalculateCropOutputs(Tt[PreviousConfig["EstablishDate"]:PreviousConfig["HarvestDate"]],
-                                                                                               PreviousConfig,CropCoefficients)
-        
+pd.read_pickle('Following_Config.pkl')
 
-PreviousNComponentColors
-
-help(dash.dcc.Dropdown)
+pd.read_pickle('Field_Config.pkl')
