@@ -49,7 +49,8 @@ CropParams = ['EndUse', 'Group','Colloquial Name', 'Type', 'Family', 'Genus', 'S
        'Stover [P]', 'Stover [K]', 'Stover [S]', 'Stover [Ca]', 'Stover [Mg]','Stover [Na]', 'Stover [Cl]']
 
 CropConfigs = ["EndUse","Group","Crop","Type","SaleableYield","Units","FieldLoss","DressingLoss",
-               "MoistureContent","EstablishDate","EstablishStage","HarvestDate","HarvestStage","ResidueTreatment","DefoliationDates"]
+               "MoistureContent","EstablishDate","EstablishStage","HarvestDate","HarvestStage",
+               "ResidueTreatment","DefoliationDates"]
 
 Units = pd.DataFrame(index = ['t/ha','kg/ha'],data=[1000,1],columns=['toKG/ha'])
 UnitsDropDown = [{'label':i,'value':Units.loc[i,'toKG/ha']} for i in Units.index]
@@ -113,12 +114,12 @@ def Generalcomponents():
 def validateConfigs():
     NotSet = 0
     for pos in Positions+['field_']:
-        config=pd.read_pickle(pos+"Config.pkl")
+        Config=pd.read_pickle(pos+"Config.pkl")
         NotSet += Config.isnull().sum()
     if NotSet > 0: 
-        return html.Button("Update NBalance",id="RefreshButton")
-    else: 
         return html.Button("Update NBalance",id="RefreshButton",disabled=True)
+    else: 
+        return html.Button("Update NBalance",id="RefreshButton",disabled=False)
 
 def updateConfig(keys,values,ConfigAddress):
     Config = pd.read_pickle(ConfigAddress)
