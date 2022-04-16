@@ -101,12 +101,21 @@ def NInputsGraph(NBalance):
     
     return fig
 
+def SoilNGraph(NBalance):
+    SoilN = NBalance.loc[:,['SoilMineralN']]
+    SoilN.columns.name='Components'
+    SoilN = SoilN.unstack().reset_index()
+    fig = px.line(data_frame=
+                  SoilN,x='Date',y=0,color='Components',
+                 )#range_x = [c['EstablishDate']-dt.timedelta(days=7),c['HarvestDate']+dt.timedelta(days=7)])
+    fig.update_layout(title_text="SoilN", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
+    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
+    fig.update_xaxes(title_text=None)
+    
+    return fig
+
 
 # -
-
-NInputs = NBalance.loc[:,['SOMNmineraliation','ResidueMineralisation']].cumsum()
-NInputs.columns.name='Components'
-NInputs.unstack()
 
 ConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -184,7 +193,16 @@ def CalculateMedianTt(Start, End, Met):
     TTmed.name = 'Tt'
     return TTmed
 
+def calcDelta(Integral):
+    prior = Integral[0]
+    delta = []
+    for i in Integral:
+        delta.append(i-prior)
+        prior = i
+    return delta
+
 def CalculateCropOutputs(AllTt, CropCoefficients, NBalance):
+    NBalance.loc[:,'CropUptake'] = 0
     for pos in  uic.Positions:
         Config = pd.read_pickle(pos+'Config.pkl')
         CropFilter = (CropCoefficients.loc[:,'EndUse'] == Config["EndUse"])&(CropCoefficients.loc[:,'Group'] == Config["Group"])\
@@ -245,12 +263,13 @@ def CalculateCropOutputs(AllTt, CropCoefficients, NBalance):
         CropN = RootN + StoverN + FieldLossN + DressingLossN + SaleableProductN
         dates = Tt[Config['EstablishDate']:Config['HarvestDate']].index
         StageCorrection = 1/(StagePropns.loc[Config["HarvestStage"],'PrpnMaxDM'])
-        NBalance.loc[Tt[dates].index,'Root']  = np.multiply(np.multiply(BiomassScaller , RootN),  StageCorrection).diff()
-        NBalance.loc[Tt[dates].index,'Stover'] = np.multiply(np.multiply(BiomassScaller , StoverN), StageCorrection).diff()
-        NBalance.loc[Tt[dates].index,'SaleableProduct'] = np.multiply(np.multiply(BiomassScaller , SaleableProductN), StageCorrection).diff()
-        NBalance.loc[Tt[dates].index,'FieldLoss'] = np.multiply(np.multiply(BiomassScaller , FieldLossN), StageCorrection).diff()
-        NBalance.loc[Tt[dates].index,'DressingLoss'] = np.multiply(np.multiply(BiomassScaller , DressingLossN), StageCorrection).diff()
-        NBalance.loc[Tt[dates].index,'TotalCrop'] = np.multiply(np.multiply(BiomassScaller , CropN),StageCorrection).diff()
+        NBalance.loc[Tt[dates].index,'Root']  = np.multiply(np.multiply(BiomassScaller , RootN),  StageCorrection)
+        NBalance.loc[Tt[dates].index,'Stover'] = np.multiply(np.multiply(BiomassScaller , StoverN), StageCorrection)
+        NBalance.loc[Tt[dates].index,'SaleableProduct'] = np.multiply(np.multiply(BiomassScaller , SaleableProductN), StageCorrection)
+        NBalance.loc[Tt[dates].index,'FieldLoss'] = np.multiply(np.multiply(BiomassScaller , FieldLossN), StageCorrection)
+        NBalance.loc[Tt[dates].index,'DressingLoss'] = np.multiply(np.multiply(BiomassScaller , DressingLossN), StageCorrection)
+        NBalance.loc[Tt[dates].index,'TotalCrop'] = np.multiply(np.multiply(BiomassScaller , CropN),StageCorrection)
+        NBalance.loc[Tt[dates].index,'CropUptake'] = calcDelta(NBalance.loc[Tt[dates].index,'TotalCrop'])
         NBalance.loc[Tt[dates].index,'Cover'] = np.multiply(CoverScaller, Params["A cover"])
         NBalance.loc[Tt[dates].index,'RootDepth'] = np.multiply(RootDepthScaller, Params["Max RD"])
         # if len(c["DefoliationDates"])>0:
@@ -306,9 +325,10 @@ def CalculateSoilMineralN(NBalance):
     for d in NBalance.loc[PreviousConfig['HarvestDate']:,:].index:
         yesterday = d - dt.timedelta(1)
         NBalance.loc[d, 'UnMeasuredSoilN'] = NBalance.loc[yesterday, 'UnMeasuredSoilN'] -\
-                                             NBalance.loc[d,'TotalCrop'] +\
+                                             NBalance.loc[d,'CropUptake'] +\
                                              NBalance.loc[d,['SOMNmineraliation','ResidueMineralisation']].sum()
     Adjustment = NBalance.loc[FieldConfig['MinNDate'], 'UnMeasuredSoilN'] - FieldConfig['MinN']
+    print(Adjustment)
     NBalance.loc[:,'SoilMineralN'] = NBalance.loc[:,'UnMeasuredSoilN'] - Adjustment
     
     
@@ -498,7 +518,7 @@ def checkConfigAndEnableUpdate(values,dates,field):
 
 @app.callback(
     Output('CropUptakeGraph','figure'),
-    #Output('MineralNGraph','figure'),
+    Output('MineralNGraph','figure'),
     Output('NInputsGraph','figure'),
     Input('RefreshButton','n_clicks'), prevent_initial_call=True)
 def RefreshGraphs(n_clicks):
@@ -514,7 +534,8 @@ def RefreshGraphs(n_clicks):
         NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
         NBalance = CalculateSOMMineralisation(Tt,NBalance)
         NBalance = CalculateResidueMineralisation(Tt,NBalance)
-        return CropNGraph(NBalance), NInputsGraph(NBalance)
+        NBalance = CalculateSoilMineralN(NBalance)
+        return CropNGraph(NBalance), SoilNGraph(NBalance), NInputsGraph(NBalance)
 
 SavedConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -572,12 +593,6 @@ for pos in uic.Positions+['field_']:
 FieldConfig = pd.read_pickle("Field_Config.pkl")
 FieldConfig
 
-pd.date_range(start=PreviousConfig['HarvestDate'],periods=15,freq='D',name='Date')
-
-FieldConfig
-
-PreviousConfig['HarvestDate'].astype(dt.datetime) - dt.timedelta(1)
-
 PreviousConfig = pd.read_pickle("Previous_Config.pkl")
 CurrentConfig = pd.read_pickle("Current_Config.pkl")
 FollowingConfig = pd.read_pickle("Following_Config.pkl")
@@ -589,13 +604,17 @@ NBalance = CalculateSOMMineralisation(Tt, NBalance)
 NBalance = CalculateResidueMineralisation(Tt,NBalance)
 NBalance = CalculateSoilMineralN(NBalance)
 
+NBalance.loc[:,'UnMeasuredSoilN'].plot()
+
+NBalance.loc[:,'CropUptake'].plot()
+
 NBalance.loc[PreviousConfig['HarvestDate']:,:]#['SoilMineralN','UnMeasuredSoilN']]
 
 NBalance.loc[np.datetime64(PreviousConfig['HarvestDate'].astype(dt.datetime) - dt.timedelta(1)),:]
 
 NBalance.index[248]
 
-NBalance
+NBalance.Root.plot()
 
 Tt
 
