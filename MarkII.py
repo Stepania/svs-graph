@@ -65,19 +65,49 @@ plt.xlabel('Temperature accumulation')
 
 # ## Graph constructors
 
+NBalance
+
+test = [1,2,4]
+test2 = [3,5,7]
+np.add(test,test2)
+
+data = [0]* len(NBalance.index)
+for c in ['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']:
+    data = np.add(data,NBalance.loc[:,c])
+#data = data.where(data == 0,np.nan)
+
+data.where(data > 0, np.nan).plot()
+
+
 # +
 def CropNGraph(NBalance):
-    CropN = NBalance.loc[:,['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']].cumsum(axis=1)
-    CropN.columns =['Root', '+ Stover', '+ FieldLoss', '+ DressingLoss', '+ SaleableProduct']
-    CropN.columns.name='Components'
-    CropN = CropN.unstack().reset_index()
-
-    NComponentColors = ['brown','orange','red','blue','green']
-    fig = px.line(data_frame=CropN,x='Date',y=0,color='Components',color_discrete_sequence=['brown','orange','red','blue','green'],
-                 )#range_x = [c['EstablishDate']-dt.timedelta(days=7),c['HarvestDate']+dt.timedelta(days=7)])
+    cols = ['brown','orange','red','blue','green']
+    fig = go.Figure()
+    hdates = []
+    pdates = []
+    for c in uic.Positions:
+        config = pd.read_pickle(c+"Config.pkl")
+        hdates.append(config['HarvestDate'])
+        pdates.append(config['HarvestDate'].astype(dt.datetime)+dt.timedelta(days=15))
+    base = [0,0,0]
+    pos=0
+    for c in ['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']:
+        data = NBalance.loc[hdates,c]
+        fig.add_trace(go.Bar(x =  pdates, y = data, base = base, offsetgroup=0, name=c, text=c,width=86400000*30,marker={'color':cols[pos]}))
+        base = np.add(base,data)
+        pos+=1
+    data = [0]* len(NBalance.index)
+    for c in ['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']:
+        data = np.add(data,NBalance.loc[:,c])
+    data = data.where(data > 0, np.nan)
+    fig.add_trace(go.Scatter(x=NBalance.index,y=data,name='Crop N',line = {'color':'green'},connectgaps=False))
+    start = pd.read_pickle('Previous_Config.pkl')['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
+    end = pd.read_pickle('Following_Config.pkl')['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
+    fig.update_xaxes(range= [start,end])
     fig.update_layout(title_text="Crop N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
     fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
     fig.update_xaxes(title_text=None)
+    fig.update_layout(legend_traceorder="reversed")
     return fig
 
 def CropWaterGraph(cropWater):
@@ -116,6 +146,21 @@ def SoilNGraph(NBalance):
 
 
 # -
+
+CropNGraph(NBalance)
+
+NBalance#.TotalCrop[PreviousConfig['HarvestDate']:]
+
+PreviousConfig = pd.read_pickle("Previous_Config.pkl")
+CurrentConfig = pd.read_pickle("Current_Config.pkl")
+FollowingConfig = pd.read_pickle("Following_Config.pkl")
+FieldConfig = pd.read_pickle("Field_Config.pkl")
+Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
+NBalance = MakeNBalanceFrame(Tt.index)
+NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
+NBalance = CalculateSOMMineralisation(Tt, NBalance)
+NBalance = CalculateResidueMineralisation(Tt,NBalance)
+NBalance = CalculateSoilMineralN(NBalance)
 
 ConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -328,7 +373,6 @@ def CalculateSoilMineralN(NBalance):
                                              NBalance.loc[d,'CropUptake'] +\
                                              NBalance.loc[d,['SOMNmineraliation','ResidueMineralisation']].sum()
     Adjustment = NBalance.loc[FieldConfig['MinNDate'], 'UnMeasuredSoilN'] - FieldConfig['MinN']
-    print(Adjustment)
     NBalance.loc[:,'SoilMineralN'] = NBalance.loc[:,'UnMeasuredSoilN'] - Adjustment
     
     
