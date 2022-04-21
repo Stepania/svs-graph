@@ -65,26 +65,6 @@ plt.xlabel('Temperature accumulation')
 
 # ## Graph constructors
 
-PreviousConfig
-
-fig = go.Figure()
-weighting = [.95,.5,.05]
-align = ['left','center','right']
-pos = 0
-for p in uic.Positions:
-    c = pd.read_pickle(p+'Config.pkl')
-    fig.add_trace(go.Scatter(x=[c['EstablishDate']]*2,y=[0,1000],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
-    fig.add_trace(go.Scatter(x=[c['HarvestDate']]*2,y=[0,1000],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
-    fig.add_annotation(dict(x= c['HarvestDate'], y= 1000, xref="x", yref="y",text="",showarrow=True,
-                            ax= c['EstablishDate'], ay= 1000, axref = "x", ayref='y', arrowhead = 3, arrowwidth=1.5, arrowcolor='grey',))
-    fig.add_annotation(dict(ax= c['HarvestDate'], y= 1000, xref="x", yref="y",text="",showarrow=True,
-                            x= c['EstablishDate'], ay= 1000, axref = "x", ayref='y', arrowhead = 3, arrowwidth=1.5, arrowcolor='grey',))
-    middate = c['EstablishDate'].astype(dt.datetime) + (c['HarvestDate'].astype(dt.datetime)-c['EstablishDate'].astype(dt.datetime))*weighting[pos]
-    fig.add_trace(go.Scatter(x=[middate], y = [1000], text = p[:-1] + ' Crop <br>'+ c['Crop'], mode="lines+text",showlegend=False,textposition='middle '+align[pos]))
-    pos +=1
-fig
-
-
 # +
 def AddTimeLines(fig,ypos,start):
     weighting = [.99,.5,.05]
@@ -92,8 +72,8 @@ def AddTimeLines(fig,ypos,start):
     pos = 0
     for p in uic.Positions:
         c = pd.read_pickle(p+'Config.pkl')
-        fig.add_trace(go.Scatter(x=[c['EstablishDate']]*2,y=[0,10000],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
-        fig.add_trace(go.Scatter(x=[c['HarvestDate']]*2,y=[0,10000],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
+        fig.add_trace(go.Scatter(x=[c['EstablishDate']]*2,y=[0,ypos*1.1],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
+        fig.add_trace(go.Scatter(x=[c['HarvestDate']]*2,y=[0,ypos*1.1],line = {'color':'grey','dash':'dash'},mode='lines',showlegend=False))
         if pos != 0:
             fig.add_annotation(dict(ax= c['HarvestDate'], y= ypos, xref="x", yref="y",text="",showarrow=True,
                                 x= c['EstablishDate'], ay= ypos, axref = "x", ayref='y', arrowhead = 3, arrowwidth=1.5, arrowcolor='grey',))
@@ -116,12 +96,12 @@ def CropNGraph(NBalance,start,end):
     for c in uic.Positions:
         config = pd.read_pickle(c+"Config.pkl")
         hdates.append(config['HarvestDate'])
-        pdates.append(config['HarvestDate'].astype(dt.datetime)+dt.timedelta(days=15))
+        pdates.append(config['HarvestDate'].astype(dt.datetime)+dt.timedelta(days=7))
     base = [0,0,0]
     pos=0
     for c in ['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']:
         data = NBalance.loc[hdates,c]
-        fig.add_trace(go.Bar(x =  pdates, y = data, base = base, offsetgroup=0, name=c, text=c,width=86400000*30,marker={'color':cols[pos]}))
+        fig.add_trace(go.Bar(x =  pdates, y = data, base = base, offsetgroup=0, name=c, text=c,width=86400000*14,marker={'color':cols[pos]}))
         base = np.add(base,data)
         pos+=1
     data = [0]* len(NBalance.index)
@@ -129,10 +109,14 @@ def CropNGraph(NBalance,start,end):
         data = np.add(data,NBalance.loc[:,c])
     data = data.where(data > 0, np.nan)
     fig.add_trace(go.Scatter(x=NBalance.index,y=data,name='Crop N',line = {'color':'green'},connectgaps=False))
-    
-    #fig.add_trace(go.Bar(x =  [], y = []*6, offsetgroup=0, name=c, text=c,width=86400000*30,marker={'color':cols[pos]}))
-    
     ypos = data.max()*1.1
+    for p in ['P','C']:
+        colpos = 0
+        data = [0] * len(NBalance.index)
+        for r in ['resRoot', 'resStover', 'resFeildLoss']:
+            data = np.add(data,NBalance.loc[:,p+r])
+            fig.add_trace(go.Scatter(x=NBalance.index+ dt.timedelta(days=14),y=data.where(data > 0.1, np.nan),name=r,line = {'color':cols[colpos]},connectgaps=False,showlegend=False))
+            colpos+=1
     fig = AddTimeLines(fig,ypos,start)
     fig.update_layout(title_text="Crop N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
     fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20, range=[0,ypos*1.1])
@@ -149,28 +133,37 @@ def CropWaterGraph(cropWater):
     fig.update_xaxes(title_text=None)
     return fig
 
-def NInputsGraph(NBalance):
-    NInputs = NBalance.loc[:,['SOMNmineraliation','ResidueMineralisation']].cumsum()
-    NInputs.columns.name='Components'
-    NInputs = NInputs.unstack().reset_index()
-    fig = px.line(data_frame=NInputs,x='Date',y=0,color='Components',
-                 )#range_x = [c['EstablishDate']-dt.timedelta(days=7),c['HarvestDate']+dt.timedelta(days=7)])
+def NInputsGraph(NBalance,start,end):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=NBalance.index,y=NBalance.loc[:,'SOMNmineraliation'].cumsum(),name='SOM mineralisation',line = {'color':'black'},connectgaps=False))
+    fig.add_trace(go.Scatter(x=NBalance.index,y=NBalance.loc[:,'ResidueMineralisation'].cumsum(),name='Residues mineralisation',line = {'color':'orange'},connectgaps=False))
+    ypos = NBalance.loc[:,['SOMNmineraliation','ResidueMineralisation']].cumsum().max().max()
+    fig = AddTimeLines(fig,ypos,start)
     fig.update_layout(title_text="N Inputs", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
-    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20)
-    fig.update_xaxes(title_text=None)
+    fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20,range=[0,ypos*1.1])
+    fig.update_xaxes(title_text=None,range=[start,end])
     
     return fig
 
-def SoilNGraph(NBalance,start,end):
-    SoilN = NBalance.loc[:,['SoilMineralN']]
-    SoilN.columns.name='Components'
-    SoilN = SoilN.unstack().reset_index()
-    fig = px.line(data_frame=
-                  SoilN,x='Date',y=0,color='Components',
-                 )
-    #print(SoilN)
-    ypos = SoilN.loc[:,0].max()*1.1
+def SoilNGraph(NBalance,start,end,trigger,Fertiliser):
+    CurrentConfig = pd.read_pickle("Current_Config.pkl")
+    FieldConfig = pd.read_pickle("Field_Config.pkl")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=[FieldConfig['MinNDate']], y=[FieldConfig['MinN']], mode="markers", name='Measured Soil N',line = {'color':'cyan'}, marker_symbol = 'x',marker_size=15))
+    fig.add_trace(go.Scatter(x=NBalance.index,y=NBalance.loc[:,'SoilMineralN'],name='Estimated Soil N',line = {'color':'brown'},connectgaps=False))
+    ypos = NBalance.loc[:,'SoilMineralN'].max()*1.3
     fig = AddTimeLines(fig,ypos,start)
+    runningmeanCU = []
+    last7days = []
+    for u in NBalance.CropUptake:
+        if len(last7days) >= 14:
+            del last7days[0]
+        last7days.append(u)
+        runningmeanCU.append(np.mean(last7days)*10)
+    fig.add_trace(go.Scatter(x=[CurrentConfig['EstablishDate'],CurrentConfig['HarvestDate'],end],y=[trigger]*2,name='Fertiliser Trigger',line = {'color':'magenta'}, mode="lines",connectgaps=False))
+    for f in Fertiliser.index:
+        n = f.strftime('%d-%b') + ' ' + str(int(Fertiliser[f])) + ' kg/ha'
+        fig.add_trace(go.Bar(x =  [f], y = [Fertiliser[f]], base = trigger ,width=86400000*3, name = n,marker={'color':'crimson'}))
     fig.update_xaxes(range= [start,end],title_text=None)
     fig.update_yaxes(title_text="Nitrogen (kg/ha)", title_font_size = 20,range = [0,ypos*1.1])
     fig.update_layout(title_text="SoilN", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
@@ -180,9 +173,26 @@ def SoilNGraph(NBalance,start,end):
 
 # -
 
+NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna().index[0].strftime('%d-%b')
+
 CropNGraph(NBalance,start,end)
 
-SoilNGraph(NBalance,start,end)
+SoilNGraph(NBalance,start,end,30,Fertiliser)
+
+NInputsGraph(NBalance,start,end)
+
+runningmeanCU = []
+last7days = []
+for u in NBalance.CropUptake:
+    if len(last7days) >= 14:
+        del last7days[0]
+    last7days.append(u)
+    runningmeanCU.append(np.mean(last7days))
+
+
+plt.plot(runningmeanCU)
+
+(NBalance.CropUptake * 10).plot()
 
 PreviousConfig = pd.read_pickle("Previous_Config.pkl")
 CurrentConfig = pd.read_pickle("Current_Config.pkl")
@@ -194,9 +204,13 @@ NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
 NBalance = CalculateSOMMineralisation(Tt, NBalance)
 NBalance = CalculateResidueMineralisation(Tt,NBalance)
 NBalance = CalculateSoilMineralN(NBalance)
+NBalance = CalculateFertiliserApplications(NBalance,30,0.8,3)
+Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
 start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
 end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
         
+
+NBalance = pd.read_pickle('TestBal.pkl')
 
 ConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -207,7 +221,7 @@ for File in os.listdir(mydir):
 
 
 def MakeNBalanceFrame(index):
-    columns = ['Root', 'Stover', 'FieldLoss', 'DressingLoss','SaleableProduct', 'TotalCrop', 'Cover','RootDepth', 'SOMNmineraliation', 'PresRoot', 'PresStover', 'PresFeildLoss', 'CresRoot', 'CresStover', 'CresFeildLoss', 'ResidueMineralisation', 'LeachingLoss', 'GasiousLoss', 'SoilMineralN','UnMeasuredSoilN']
+    columns = ['Root', 'Stover', 'FieldLoss', 'DressingLoss','SaleableProduct', 'TotalCrop', 'Cover','RootDepth', 'SOMNmineraliation', 'PresRoot', 'PresStover', 'PresFeildLoss', 'CresRoot', 'CresStover', 'CresFeildLoss', 'ResidueMineralisation', 'LeachingLoss', 'GasiousLoss', 'SoilMineralN','UnMeasuredSoilN','FertiliserN']
     return pd.DataFrame(index = index, columns = columns, data= 0.0)
 
 
@@ -385,14 +399,15 @@ def CalculateResidueMineralisation(Tt, NBalance):
         
         for pool in ['PresRoot', 'PresStover', 'PresFeildLoss', 'CresRoot', 'CresStover', 'CresFeildLoss']:
             tomorrow = d + dt.timedelta(1)
-            mineralisation = NBalance.loc[d,pool] * 0.002 * Tt[d]
+            mineralisation = NBalance.loc[d,pool] * 0.001 * Tt[d]
             NBalance.loc[d,'ResidueMineralisation'] += mineralisation
             NBalance.loc[tomorrow,pool] = NBalance.loc[d,pool] - mineralisation
     return NBalance  
 
 def CalculateSOMMineralisation(Tt, NBalance):
+    PreviousConfig = pd.read_pickle("Previous_Config.pkl")
     FieldConfig = pd.read_pickle("Field_Config.pkl")
-    for d in Tt.index[1:]:
+    for d in Tt[PreviousConfig['HarvestDate']:].index:
         NBalance.loc[d,'SOMNmineraliation'] =  FieldConfig['HWEON'] * Tt[d] * 0.005
     return NBalance
 
@@ -411,36 +426,27 @@ def CalculateSoilMineralN(NBalance):
                                              NBalance.loc[d,['SOMNmineraliation','ResidueMineralisation']].sum()
     Adjustment = NBalance.loc[FieldConfig['MinNDate'], 'UnMeasuredSoilN'] - FieldConfig['MinN']
     NBalance.loc[:,'SoilMineralN'] = NBalance.loc[:,'UnMeasuredSoilN'] - Adjustment
-    
-    
-#     FinalN = 30
-#     Eff = 0.8
-#     splits = 3
-#     duration = (CurrentConfig['HarvestDate']-CurrentConfig['EstablishDate']).days
-#     InCropMineralisation = CurrentConfig[['RootN',"StoverN","FieldLossN","SOMN"]].sum()
-#     NFertReq = (CurrentConfig["CropN"] + FinalN) - FieldConfig["MineralN"] - InCropMineralisation
-#     NFertReq = NFertReq * 1/Eff
-#     NFertReq = np.ceil(NFertReq)
-#     print(NFertReq)
-#     NAppn = NFertReq/splits
-#     plength = duration/(splits + 1)
-#     xlocs = [0]
-#     plength = np.ceil(duration/(splits + 1))
-#     xlocs = []
-#     for x in range(1,int(splits+1)):
-#         xlocs.append(x * plength)
-#     FertApplied = 0
-#     FertAppNo = 0
-#     maxSoilN = max(FieldConfig["MineralN"],FinalN + NAppn)
-#     SoilN[CurrentConfig['EstablishDate']] = FieldConfig["MineralN"]
-#     for d in SoilN[CurrentConfig['EstablishDate']:].index[1:]:
-#         yesterday = d - dt.timedelta(days=1)
-#         CropNd = np.nan_to_num(CropN.loc['TotalCrop','Values'].diff()[d],0)
-#         SoilN[d] = SoilN[yesterday] + DeltaResidueN[d] + DeltaSOMN[d] - CropNd 
-#         if (SoilN[yesterday] > SoilN[d]) and (SoilN[d] < FinalN) and (FertApplied < NFertReq): #and ((CropPatterns.iloc[d-1,4]-CropPatterns.iloc[d,4])<0):
-#             SoilN[d] += NAppn * Eff
-#             FertApplied += NAppn
     return NBalance
+    
+def CalculateFertiliserApplications(NBalance,trigger,efficiency,splits):    
+    CurrentConfig = pd.read_pickle("Current_Config.pkl")
+    duration = (CurrentConfig['HarvestDate'].astype(dt.date)-CurrentConfig['EstablishDate'].astype(dt.date)).days
+    InitialSoilN = NBalance.loc[CurrentConfig['EstablishDate'],'SoilMineralN']
+    InCropMineralisation =  NBalance.loc[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate'],['SOMNmineraliation','ResidueMineralisation']].sum().sum()
+    CropN = NBalance.loc[CurrentConfig['HarvestDate'],'TotalCrop'] - NBalance.loc[CurrentConfig['EstablishDate'],'TotalCrop']
+    NFertReq = (CropN + trigger) -  InitialSoilN - InCropMineralisation
+    NFertReq = NFertReq * 1/efficiency
+    NAppn = np.ceil(NFertReq/splits)
+    FertApplied = 0
+    FertAppNo = 0
+    for d in NBalance[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate']].index:
+        yesterday = d - dt.timedelta(days=1)
+        if (NBalance.loc[d,'SoilMineralN'] < trigger) and (FertApplied < NFertReq):
+            NBalance.loc[d:,'SoilMineralN'] = NBalance.loc[yesterday:,'SoilMineralN'] + (NAppn * efficiency)
+            NBalance.loc[d,'FertiliserN'] = NAppn
+    return NBalance
+
+
 # -
 
 # ## App layout and callbacks
@@ -618,7 +624,12 @@ def RefreshGraphs(n_clicks):
         NBalance = CalculateSOMMineralisation(Tt,NBalance)
         NBalance = CalculateResidueMineralisation(Tt,NBalance)
         NBalance = CalculateSoilMineralN(NBalance)
-        return CropNGraph(NBalance,start,end), SoilNGraph(NBalance,start,end), NInputsGraph(NBalance)
+        trigger = 30
+        efficiency = 0.8
+        splits = 3
+        NBalance = CalculateFertiliserApplications(NBalance,trigger,efficiency,splits)
+        Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
+        return CropNGraph(NBalance,start,end), SoilNGraph(NBalance,start,end,trigger,Fertiliser), NInputsGraph(NBalance,start,end)
 
 SavedConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -660,55 +671,13 @@ app.layout = html.Div([
                              dbc.Row(html.Button("Update NBalance",id="RefreshButton",disabled=True),id="RefreshButtonRow"),
                              dbc.Row(html.H1(""))
                             ],width = 2,id={"Group":"UI","id":"FieldUI"}),
-                    dbc.Col([dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph'))),
-                             dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph'))),
-                             dbc.Row(dbc.Card(dcc.Graph(id='NInputsGraph')))
+                    dbc.Col([dcc.Loading(id='CropGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph')))),
+                             dcc.Loading(id='SoilGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph')))),
+                             dcc.Loading(id='InputsGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='NInputsGraph'))))
                             ])
                         ])
                      ])
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
 # -
-for pos in uic.Positions+['field_']:
-    Config=pd.read_pickle(pos+"Config.pkl")
-    print(Config.isnull().sum())
-
-FieldConfig = pd.read_pickle("Field_Config.pkl")
-FieldConfig
-
-PreviousConfig = pd.read_pickle("Previous_Config.pkl")
-CurrentConfig = pd.read_pickle("Current_Config.pkl")
-FollowingConfig = pd.read_pickle("Following_Config.pkl")
-FieldConfig = pd.read_pickle("Field_Config.pkl")
-Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
-NBalance = MakeNBalanceFrame(Tt.index)
-NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
-NBalance = CalculateSOMMineralisation(Tt, NBalance)
-NBalance = CalculateResidueMineralisation(Tt,NBalance)
-NBalance = CalculateSoilMineralN(NBalance)
-
-NBalance.loc[:,'UnMeasuredSoilN'].plot()
-
-NBalance.loc[:,'CropUptake'].plot()
-
-NBalance.loc[PreviousConfig['HarvestDate']:,:]#['SoilMineralN','UnMeasuredSoilN']]
-
-NBalance.loc[np.datetime64(PreviousConfig['HarvestDate'].astype(dt.datetime) - dt.timedelta(1)),:]
-
-NBalance.index[248]
-
-NBalance.Root.plot()
-
-Tt
-
-CropN.loc[CropN.Components=='Root',0]#.plot()
-
-pd.read_pickle('Previous_Config.pkl')
-
-pd.read_pickle('Current_Config.pkl')
-
-pd.read_pickle('Following_Config.pkl')
-
-pd.read_pickle('Field_Config.pkl')
-
 help(dash.dcc.Dropdown)
