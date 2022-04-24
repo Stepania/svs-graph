@@ -117,9 +117,9 @@ def validateConfigs():
         Config=pd.read_pickle(pos+"Config.pkl")
         NotSet += Config.isnull().sum()
     if NotSet > 0: 
-        return html.Button("Update NBalance",id="RefreshButton",disabled=True)
+        return html.Button("Update NBalance",id="RefreshButton",disabled=True,style={'width':'100%','height':'150%',"font-size":"150%"})
     else: 
-        return html.Button("Update NBalance",id="RefreshButton",disabled=False)
+        return html.Button("Update NBalance",id="RefreshButton",disabled=False,style={'width':'100%','height':'150%',"font-size":"150%"})
 
 def updateConfig(keys,values,ConfigAddress):
     Config = pd.read_pickle(ConfigAddress)

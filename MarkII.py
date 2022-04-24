@@ -695,7 +695,18 @@ def setInputValue(value):
     uic.updateConfig([outp],[value],pos+"Config.pkl")
     return value
 
-# Activate Load and Save buttons
+# Activate Load buttons
+@app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":'LoadButton'},"children"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              prevent_initial_call=True)
+def FieldSet(selection):
+    if (selection == None) 
+        raise PreventUpdate
+    else:
+        loadbutton = html.Button("Load Config",id="LoadButton",style = {'width':'100%','height':'110%'})
+    return loadbutton, savebutton
+
+# Activate Save button
 @app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":ALL},"children"),
               Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
               Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
@@ -704,8 +715,8 @@ def FieldSet(selection,inputval):
     if (selection == None) and (inputval  == None):
         raise PreventUpdate
     else:
-        loadbutton = html.Button("Load Config",id="LoadButton")
-        savebutton = html.Button("Save Config",id="SaveButton")
+        loadbutton = html.Button("Load Config",id="LoadButton",style = {'width':'100%','height':'110%'})
+        savebutton = html.Button("Save Config",id="SaveButton",style = {'width':'100%','height':'110%'})
     return loadbutton, savebutton
 
 # Config load callback
@@ -904,7 +915,7 @@ app.layout = html.Div([
                              dbc.Row([],style=brStyle),
                              dbc.Row([],style=brStyle),
                              dbc.Row([dbc.Col(width =2),
-                                     dbc.Col(html.Button("Update NBalance",disabled=True,
+                                      dbc.Col(html.Button("Update NBalance",disabled=True,
                                                          style={'width':'100%','height':'150%',"font-size":"150%"},
                                                          id="RefreshButton"),
                                             width = 10)],
