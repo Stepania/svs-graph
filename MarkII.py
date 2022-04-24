@@ -35,8 +35,9 @@ import CropNBalUICompenents as uic
 #from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
 from dash.exceptions import PreventUpdate
 import os
-
 from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
+
+
 
 # ## General components
 
@@ -108,14 +109,14 @@ def CropNGraph(NBalance,start,end):
     for c in ['Root','Stover','FieldLoss','DressingLoss','SaleableProduct']:
         data = np.add(data,NBalance.loc[:,c])
     data = data.where(data > 0, np.nan)
-    fig.add_trace(go.Scatter(x=NBalance.index,y=data,name='Crop N',line = {'color':'green'},connectgaps=False))
+    fig.add_trace(go.Scatter(x=NBalance.index,y=data,name='Crop N',line = {'color':'green',},connectgaps=False))
     ypos = data.max()*1.1
     for p in ['P','C']:
         colpos = 0
         data = [0] * len(NBalance.index)
         for r in ['resRoot', 'resStover', 'resFeildLoss']:
             data = np.add(data,NBalance.loc[:,p+r])
-            fig.add_trace(go.Scatter(x=NBalance.index+ dt.timedelta(days=14),y=data.where(data > 0.1, np.nan),name=r,line = {'color':cols[colpos]},connectgaps=False,showlegend=False))
+            fig.add_trace(go.Scatter(x=NBalance.index+ dt.timedelta(days=14),y=data.where(data > 0.1, np.nan),name=r,line = {'color':cols[colpos],'dash':'dot'},connectgaps=False,showlegend=False))
             colpos+=1
     fig = AddTimeLines(fig,ypos,start)
     fig.update_layout(title_text="Crop N", title_font_size = 30, title_x = 0.5, title_xanchor = 'center')
@@ -149,7 +150,7 @@ def SoilNGraph(NBalance,start,end,trigger,Fertiliser):
     CurrentConfig = pd.read_pickle("Current_Config.pkl")
     FieldConfig = pd.read_pickle("Field_Config.pkl")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=[FieldConfig['MinNDate']], y=[FieldConfig['MinN']], mode="markers", name='Measured Soil N',line = {'color':'cyan'}, marker_symbol = 'x',marker_size=15))
+    fig.add_trace(go.Scatter(x=[FieldConfig['MinNDate']], y=[FieldConfig['MinN']], mode="markers", name='Measured Soil N',line = {'color':'darkblue'}, marker_symbol = 'x',marker_size=15))
     fig.add_trace(go.Scatter(x=NBalance.index,y=NBalance.loc[:,'SoilMineralN'],name='Estimated Soil N',line = {'color':'brown'},connectgaps=False))
     ypos = NBalance.loc[:,'SoilMineralN'].max()*1.3
     fig = AddTimeLines(fig,ypos,start)
@@ -172,8 +173,6 @@ def SoilNGraph(NBalance,start,end,trigger,Fertiliser):
 
 
 # -
-
-NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna().index[0].strftime('%d-%b')
 
 CropNGraph(NBalance,start,end)
 
@@ -208,9 +207,7 @@ NBalance = CalculateFertiliserApplications(NBalance,30,0.8,3)
 Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
 start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
 end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
-        
 
-NBalance = pd.read_pickle('TestBal.pkl')
 
 ConfigFiles = []
 mydir = 'C:\GitHubRepos\SVS'
@@ -430,8 +427,9 @@ def CalculateSoilMineralN(NBalance):
     
 def CalculateFertiliserApplications(NBalance,trigger,efficiency,splits):    
     CurrentConfig = pd.read_pickle("Current_Config.pkl")
+    FieldConfig = pd.read_pickle('Field_Config.pkl')
     duration = (CurrentConfig['HarvestDate'].astype(dt.date)-CurrentConfig['EstablishDate'].astype(dt.date)).days
-    InitialSoilN = NBalance.loc[CurrentConfig['EstablishDate'],'SoilMineralN']
+    InitialSoilN = NBalance.loc[CurrentConfig['EstablishDate'],'SoilMineralN'] + CurrentConfig['EstablishN']
     InCropMineralisation =  NBalance.loc[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate'],['SOMNmineraliation','ResidueMineralisation']].sum().sum()
     CropN = NBalance.loc[CurrentConfig['HarvestDate'],'TotalCrop'] - NBalance.loc[CurrentConfig['EstablishDate'],'TotalCrop']
     NFertReq = (CropN + trigger) -  InitialSoilN - InCropMineralisation
@@ -439,11 +437,13 @@ def CalculateFertiliserApplications(NBalance,trigger,efficiency,splits):
     NAppn = np.ceil(NFertReq/splits)
     FertApplied = 0
     FertAppNo = 0
+    NBalance.loc[CurrentConfig['EstablishDate']:,'SoilMineralN'] = NBalance.loc[CurrentConfig['EstablishDate']:,'SoilMineralN'] + (CurrentConfig["EstablishN"] * efficiency)
     for d in NBalance[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate']].index:
         yesterday = d - dt.timedelta(days=1)
         if (NBalance.loc[d,'SoilMineralN'] < trigger) and (FertApplied < NFertReq):
             NBalance.loc[d:,'SoilMineralN'] = NBalance.loc[yesterday:,'SoilMineralN'] + (NAppn * efficiency)
             NBalance.loc[d,'FertiliserN'] = NAppn
+    NBalance.loc[:FieldConfig['MinNDate'],'SoilMineralN'] = np.nan
     return NBalance
 
 
@@ -452,18 +452,198 @@ def CalculateFertiliserApplications(NBalance,trigger,efficiency,splits):
 # ## App layout and callbacks
 
 # +
+ddStyle = style={"height":"95%","font-size":"95%",'color':'#3a3f44','background-color':'#3a3f44','border': '#3a3f44'}
+adStyle = style={"height":"95%","font-size":"95%"}
+diStyle = style={"width": "95%","height":"95%","font-size":"95%",'color':'#3a3f44','background-color':'#3a3f44'}
+aiStyle = style={"width": "95%","height":"95%","font-size":"95%"}
+dpStyle = style={"height":"95%",'color':'#3a3f44','background-color':'#3a3f44'}
+headingStyle = {"width":"95%","height":"100%","font-size":"150%", "justifyContent":'left'}
+textStyle = {"width":"95%","height":"95%","font-size":"95%","justifyContent":'left'}
+colStyle = {"height":"95%"}
+hrStyle = {'height':'8%'}
+drStyle = {'height':'10%'}
+trStyle = {'height':'5%'}
+brStyle = {'height':'1%'}
+def CropInputs(pos,EndUseCatagoriesDropdown,disableDates,EDatePHtext,HDatePHtext):
+    return dbc.Container([
+    ## Crop Type informaiton
+    dbc.Row([html.B(pos[:-1]+ " crop information",
+                     style=headingStyle,
+                     id = {"pos":pos,"Group":"Crop","subGroup":"Title","RetType":"displaytext","id":"PositionTitle"})],
+           style=hrStyle),
+    dbc.Row([dbc.Col([html.B('End use',
+                            style = textStyle)],
+                     width=3, align='center',style = colStyle),
+             dbc.Col([html.B('Group', 
+                             style = textStyle)],
+                     width=3, align='center',style = colStyle),
+             dbc.Col([html.B('Crop', 
+                             style = textStyle)], 
+                     width=3, align='center',style = colStyle),
+             dbc.Col([html.B('Type', 
+                             style = textStyle)], 
+                     width=3, align='center',style = colStyle)],
+           style=trStyle), 
+    dbc.Row([dbc.Col([dcc.Dropdown(options = EndUseCatagoriesDropdown, placeholder=' Pick end use',
+                                   style=adStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"EndUse"})],
+                     width=True ,align='center', style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"EndUse"}),
+             dbc.Col([dcc.Dropdown(options = [], placeholder=' Pick "EndUse" first' ,
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Group"})], 
+                      width=3 ,align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Group"}),
+             dbc.Col([dcc.Dropdown(options = [], placeholder=' Select "Group" first',
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Crop"})], 
+                     width=3 ,align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Crop"}),
+             dbc.Col([dcc.Dropdown(options = [], placeholder='',
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":"Type"})], 
+                     width=3 ,align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":"Type"})],
+           style=drStyle),
+    dbc.Row([],style=brStyle),
+    ## Crop Harvest Information
+    dbc.Row([dbc.Col([html.B(pos[:-1]+ ' harvest information',
+                               style=headingStyle,
+                               id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"displaytext","id":"ProductType"})],
+                     width=12, align='left',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"Product Type"})],
+            style=hrStyle),
+    dbc.Row([dbc.Col([dcc.Input(type="number",placeholder = "Enter Expected Yield",min=0,disabled=True,
+                                style=diStyle,
+                                id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id": "SaleableYield"})],
+                      width=3, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"SaleableYield"}),
+             dbc.Col([dcc.Dropdown(options = [], placeholder = "",disabled=True,
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"Units"})], 
+                     width=3, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"Units"}),
+             dbc.Col([html.Div('at',
+                               style=dict(display='flex', justifyContent='center'))],
+                     width = 1, align='center', style = colStyle),
+             dbc.Col([dcc.Input(type="number",min=0,max=96,disabled=True,
+                                style=diStyle,
+                                id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"MoistureContent"})],
+                     width=2, align='center', style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"MoistureContent"}),
+             dbc.Col([html.Div('% Moisture',
+                               style=dict(display='flex', justifyContent='left'))], 
+                     width=3, align='left',style = colStyle)],
+           style=drStyle), 
+    dbc.Row([],style=brStyle),
+    
+    dbc.Row([dbc.Col([dcc.Input(type="number",min=0,max=100,disabled=True,
+                                style=diStyle,
+                                id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"FieldLoss"})],
+                     width=2, align='right',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"FieldLoss"}),
+             dbc.Col([html.Div('Field Loss (%)',
+                               style=dict(display='flex', justifyContent='left'))],
+                     width=3, align='left',style = colStyle),
+             dbc.Col([dcc.Input(type="number",min=0,max=100,disabled=True,
+                                style=diStyle,
+                                id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"DressingLoss"})],
+                      width=2, align='right',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"DressingLoss"}),
+            dbc.Col([html.Div('Dressing loss (%)',
+                               style=dict(display='flex', justifyContent='left'))], 
+                     width=3, align='left',style = colStyle)],
+           style=drStyle), 
+    dbc.Row([],style=brStyle),
+    
+
+    # Crop Management Information    
+    dbc.Row([dbc.Col([html.B(pos[:-1]+ ' management information',
+                               style=headingStyle)],
+                     width=12, align='left',style = colStyle)],
+            style=hrStyle),
+    dbc.Row([dbc.Col([html.Div('Planting Date',
+                               style = textStyle)], 
+                     width=4, align='center',style = colStyle),
+             dbc.Col([html.Div('Planting method',
+                               style = textStyle)], 
+                     width=4, align='center',style = colStyle),
+             dbc.Col([html.Div('Planting Nitrogen', 
+                               style = textStyle)],
+                     width=4, align='center',style = colStyle)],
+             style=trStyle),    
+    dbc.Row([dbc.Col([dcc.DatePickerSingle(min_date_allowed=dt.date(2020, 1, 1),
+                                           max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+                                           placeholder = EDatePHtext, display_format='D-MMM-YYYY', disabled = disableDates,
+                                           style = dpStyle,
+                                           id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":"EstablishDate"})], 
+                     width=4, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"children","id":"EstablishDate"}),
+             dbc.Col([dcc.Dropdown(options =[], placeholder='',disabled=True,
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishStage"})],
+                     width=4, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"EstablishStage"}),
+             dbc.Col([dcc.Input(type="number",min=0,max=400,disabled=True,
+                                style=diStyle,
+                                id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"EstablishN"})],
+                     width=2, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"EstablishN"}),
+            dbc.Col([html.Div('kg/ha',
+                               style=dict(display='flex', justifyContent='left'))],
+                    width=2, align='left',style = colStyle)],
+            style=drStyle), 
+    dbc.Row([dbc.Col([html.Div('Harvest Date',
+                               style = textStyle)], 
+                     width=4, align='center',style = colStyle),
+            dbc.Col([html.Div('Harvest Stage',
+                               style = textStyle)],
+                     width=4, align='center',style = colStyle),
+            dbc.Col([html.Div('Residue Treatment',
+                               style = textStyle)],
+                     width=4, align='center',style = colStyle)],
+            style=trStyle),
+    dbc.Row([dbc.Col([dcc.DatePickerSingle(min_date_allowed=dt.date(2020, 1, 1),
+                                           max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+                                           placeholder = HDatePHtext,display_format='D-MMM-YYYY',disabled=True,
+                                           style = dpStyle,
+                                           id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"date","id":"HarvestDate"})], 
+                     width=4, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"Event","RetType":"children","id":"HarvestDate"}), 
+             dbc.Col([dcc.Dropdown(options = [],placeholder='',disabled=True,
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"HarvestStage"})], 
+                     width=4, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"HarvestStage"}),
+             dbc.Col([dcc.Dropdown(options =[], placeholder='',disabled=True,
+                                   style=ddStyle,
+                                   id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"value","id":"ResidueTreatment"})],
+                     width=4, align='center',style = colStyle,
+                     id={"pos":pos,"Group":"Crop","subGroup":"data","RetType":"children","id":"ResidueTreatment"})],
+            style=drStyle), 
+    dbc.Row([dbc.Col([html.Div('Defoliatoin Dates')], 
+                     width=3, align='center',style = colStyle),
+            dbc.Col([dcc.Checklist(options=[],
+                                   id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"value","id":"DefoliationDates"})],
+                    width=9, align='left',style = colStyle,
+                    id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"})],
+            style=drStyle)],
+    style={"height": "100%"},fluid=True)
+
+
+
 # Empty the config files
 FieldConfigs = ['FieldNameInput','Location','HWEON','MinN','MinNDate']
 FieldConfig = pd.Series(index = FieldConfigs, data = [""]+[None]*4)
 FieldConfig.to_pickle("Field_Config.pkl")
 
-PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
+PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
 PreviousConfig.to_pickle("Previous_Config.pkl")
 
-CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
+CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
 CurrentConfig.to_pickle("Current_Config.pkl")
 
-FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*14+[[]])
+FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
 FollowingConfig.to_pickle("Following_Config.pkl")
 
 import ast
@@ -487,7 +667,7 @@ def ChangeCrop(values):
     if not any(values):
         raise PreventUpdate
     inputDF = uic.makeDataSeries(dash.callback_context.inputs_list,values)
-    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*13)
+    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*14)
     pos = dash.callback_context.outputs_list[0][0]['id']['pos']
     return uic.UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
 
@@ -640,44 +820,111 @@ for File in os.listdir(mydir):
             
 app.layout = html.Div([
                 dbc.Row([
-                    dbc.Col([dbc.Row(dbc.Card(uic.CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date','Set Planting Date first')),
+                    dbc.Col([dbc.Row(dbc.Card(CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date','Set Planting Date first'),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
                                      id={"Group":"UI","id":"PreviousConfigUI"}),
-                             dbc.Row(dbc.Card(uic.CropInputs('Current_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')),
+                             dbc.Row(dbc.Card(CropInputs('Current_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first'),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
                                      id={"Group":"UI","id":"CurrentConfigUI"}),
-                             dbc.Row(dbc.Card(uic.CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first')),
+                             dbc.Row(dbc.Card(CropInputs('Following_',EndUseCatagoriesDropdown,True, 'Set Prior Crop dates first','Set Prior Crop dates first'),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
                                      id={"Group":"UI","id":"FollowingConfigUI"})
-                            ]),
-                    dbc.Col([dbc.Row(html.H1("Field Name", id="FNtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Select saved field', id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"})),
-                             dbc.Row(dcc.Input(type="text",debounce=True, placeholder='or type new field name',min=0,id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"})),
-                             dbc.Row(html.Button("Load Config", disabled=True, id="LoadButton"),
-                                     id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"LoadButton"}),
-                             dbc.Row(html.Div("Last Load", id="LLtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(html.Button("Save Config",disabled=True,id="SaveButton"),
-                                     id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"}),
-                             dbc.Row(html.Div("Last Save", id="LStext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(html.H1("Field Location")),
-                             dbc.Row(dcc.Dropdown(id={"Group":"Field","subGroup":"Place","RetType":"value","id":"Location"},options = MetDropDown,placeholder='Select closest location')),
-                             dbc.Row(html.H1("Soil Test Values")),
-                             dbc.Row(html.Div("HWEON test value", id="HWEONtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"HWEON"})),
-                             dbc.Row(html.Div("MinN test date", id="MinDatetext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Col([dcc.DatePickerSingle(id={"Group":"Field","subGroup":"Soil","RetType":"date","id":"MinNDate"}, min_date_allowed=dt.date(2020, 1, 1),
-                                            max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                            placeholder = 'Select date',display_format='D-MMM-YYYY')], 
-                                     id={"Group":"Field","subGroup":"Soil","RetType":"children","id":"MinNDate"}, width=2, align='center'), 
-                             dbc.Row(html.Div("MinN test value", id="MinNtext",style=dict(display='flex', justifyContent='right'))),
-                             dbc.Row(dcc.Input(type="number", placeholder='Enter test value',min=0,id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"MinN"})),
-                             dbc.Row(html.Button("Update NBalance",id="RefreshButton",disabled=True),id="RefreshButtonRow"),
+                            ],
+                           width = 4),
+                    dbc.Col([dbc.Row(html.H1("Field Name",
+                                             style=headingStyle,
+                                             id="FNtext")),
+                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Select saved field',
+                                                  style = adStyle,
+                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"})),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width=6),
+                                      dbc.Col(html.Button("Load Config", disabled=True, 
+                                                 style = {'width':'100%','height':'110%'},
+                                                 id="LoadButton"),
+                                              width = 6,
+                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"LoadButton"})
+                                      ]),
+                             dbc.Row(html.Div("Last Load",
+                                              style=dict(display='flex', justifyContent='right'),
+                                              id="LLtext")),
+                             dbc.Row(dbc.Col(dcc.Input(type="text",debounce=True, placeholder='or type new field name',min=0,
+                                                        style = {'width':'100%'},
+                                              id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"}),
+                                              width = 12)),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width=6),
+                                      dbc.Col(html.Button("Save Config",disabled=True,
+                                                          style = {'width':'100%','height':'110%'},
+                                                          id="SaveButton"),
+                                              width = 6,
+                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"})]),
+                             dbc.Row(html.Div("Last Save",
+                                              style=dict(display='flex', justifyContent='right'), 
+                                              id="LStext")),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row(html.H1("Field Location",
+                                            style=headingStyle)),
+                             dbc.Row(dcc.Dropdown(options = MetDropDown, placeholder='Select closest location',
+                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"Location"})),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row(html.H1("Soil Test Values",
+                                            style=headingStyle,)),
+                             dbc.Row([dbc.Col(html.Div("HWEON test"
+                                              ,style=dict(display='flex', justifyContent='right'), 
+                                              id="HWEONtext"),
+                                              width = 6),
+                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
+                                                       style= {'width':'100%'},
+                                               id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"HWEON"}),
+                                            width = 5)]),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(html.Div("Mineral N test date", 
+                                              style=dict(display='flex', justifyContent='right'),
+                                              id="MinDatetext"),
+                                              width=6),
+                                     dbc.Col([dcc.DatePickerSingle(id={"Group":"Field","subGroup":"Soil","RetType":"date","id":"MinNDate"}, min_date_allowed=dt.date(2020, 1, 1),
+                                                    max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+                                                    placeholder = 'Select date',display_format='D-MMM-YYYY')],
+                                             style = {'width':'10%'},
+                                             id={"Group":"Field","subGroup":"Soil","RetType":"children","id":"MinNDate"}, 
+                                             width=5, align='center')]), 
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(html.Div("Mineral N test"
+                                              ,style=dict(display='flex', justifyContent='right', 
+                                              id="MinNtext")),
+                                             width = 6),
+                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
+                                                       style= {'width':'100%'},
+                                                       id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"MinN"}),
+                                            width = 5)]),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width =2),
+                                     dbc.Col(html.Button("Update NBalance",disabled=True,
+                                                         style={'width':'100%','height':'150%',"font-size":"150%"},
+                                                         id="RefreshButton"),
+                                            width = 10)],
+                                     style={"width":"90%"}, align='center', justify="centre",
+                                     id="RefreshButtonRow"),
                              dbc.Row(html.H1(""))
-                            ],width = 2,id={"Group":"UI","id":"FieldUI"}),
+                            ],
+                            width = 2, 
+                            id={"Group":"UI","id":"FieldUI"}),
                     dbc.Col([dcc.Loading(id='CropGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph')))),
                              dcc.Loading(id='SoilGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph')))),
                              dcc.Loading(id='InputsGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='NInputsGraph'))))
-                            ])
-                        ])
+                            ],
+                           width = 6)
+                        ], 
+                )
                      ])
 # Run app and display result inline in the notebook
 app.run_server(mode='external')
 # -
-help(dash.dcc.Dropdown)
+help(dcc.dash.dropdown)
+
+
