@@ -37,8 +37,6 @@ from dash.exceptions import PreventUpdate
 import os
 from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
 
-
-
 # ## General components
 
 CropCoefficients, EndUseCatagoriesDropdown, metFiles, MetDropDown, MonthIndexs = uic.Generalcomponents()
@@ -177,50 +175,59 @@ def SoilNGraph(NBalance,start,end,trigger,Fertiliser):
     
     return fig
 
+# +
+# test = CurrentConfig['EstablishDate'].astype(dt.datetime) - dt.timedelta(days=1)
 
+# +
+# test.strftime('%Y-%m-%d')
+
+# +
+# NBalance.loc[test.strftime('%Y-%m-%d'),'SoilMineralN']
+
+# +
+# CropNGraph(NBalance,start,end)
+
+# +
+# SoilNGraph(NBalance,start,end,30,Fertiliser)
+
+# +
+# NInputsGraph(NBalance,start,end)
+
+# +
+# runningmeanCU = []
+# last7days = []
+# for u in NBalance.CropUptake:
+#     # if len(last7days) >= 14:
+#         del last7days[0]
+#     last7days.append(u)
+#     runningmeanCU.append(np.mean(last7days))
+
+
+# +
+# plt.plot(runningmeanCU)
+
+# +
+# (NBalance.CropUptake * 10).plot()
+
+# +
+# FieldConfig
+
+# +
+# PreviousConfig = pd.read_pickle("Previous_Config.pkl")
+# CurrentConfig = pd.read_pickle("Current_Config.pkl")
+# FollowingConfig = pd.read_pickle("Following_Config.pkl")
+# FieldConfig = pd.read_pickle("Field_Config.pkl")
+# Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
+# NBalance = MakeNBalanceFrame(Tt.index)
+# NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
+# NBalance = CalculateSOMMineralisation(Tt, NBalance)
+# NBalance = CalculateResidueMineralisation(Tt,NBalance)
+# NBalance = CalculateSoilMineralN(NBalance)
+# NBalance = CalculateFertiliserApplications(NBalance,30,0.8,3)
+# Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
+# start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
+# end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
 # -
-
-test = CurrentConfig['EstablishDate'].astype(dt.datetime) - dt.timedelta(days=1)
-
-test.strftime('%Y-%m-%d')
-
-NBalance.loc[test.strftime('%Y-%m-%d'),'SoilMineralN']
-
-CropNGraph(NBalance,start,end)
-
-SoilNGraph(NBalance,start,end,30,Fertiliser)
-
-NInputsGraph(NBalance,start,end)
-
-runningmeanCU = []
-last7days = []
-for u in NBalance.CropUptake:
-    if len(last7days) >= 14:
-        del last7days[0]
-    last7days.append(u)
-    runningmeanCU.append(np.mean(last7days))
-
-
-plt.plot(runningmeanCU)
-
-(NBalance.CropUptake * 10).plot()
-
-PreviousConfig
-
-PreviousConfig = pd.read_pickle("Previous_Config.pkl")
-CurrentConfig = pd.read_pickle("Current_Config.pkl")
-FollowingConfig = pd.read_pickle("Following_Config.pkl")
-FieldConfig = pd.read_pickle("Field_Config.pkl")
-Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
-NBalance = MakeNBalanceFrame(Tt.index)
-NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
-NBalance = CalculateSOMMineralisation(Tt, NBalance)
-NBalance = CalculateResidueMineralisation(Tt,NBalance)
-NBalance = CalculateSoilMineralN(NBalance)
-NBalance = CalculateFertiliserApplications(NBalance,30,0.8,3)
-Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
-start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
-end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
 
 
 ConfigFiles = []
@@ -447,334 +454,29 @@ def CalculateFertiliserApplications(NBalance,trigger,efficiency,splits):
     NBalance.loc[CurrentConfig['EstablishDate']:,'SoilMineralN'] = NBalance.loc[CurrentConfig['EstablishDate']:,'SoilMineralN'] + (CurrentConfig["EstablishN"] * efficiency)
     # Calculate further N requirements
     InitialSoilN = NBalance.loc[CurrentConfig['EstablishDate'],'SoilMineralN']
-    print('InitialSoilN ' + str(InitialSoilN))
+    #print('InitialSoilN ' + str(InitialSoilN))
     InCropMineralisation =  NBalance.loc[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate'],['SOMNmineraliation','ResidueMineralisation']].sum().sum()
-    print('InCropMineralisation ' + str(InCropMineralisation))
+    #print('InCropMineralisation ' + str(InCropMineralisation))
     CropN = NBalance.loc[CurrentConfig['HarvestDate'],'TotalCrop'] - NBalance.loc[CurrentConfig['EstablishDate'],'TotalCrop']
-    print('CropN ' +str(CropN))
-    print('Trigger ' +str(trigger))
+    #print('CropN ' +str(CropN))
+    #print('Trigger ' +str(trigger))
     NFertReq = (CropN + trigger) -  InitialSoilN - InCropMineralisation
     NFertReq = NFertReq * 1/efficiency
-    print(NFertReq)
+    #print(NFertReq)
     NAppn = np.ceil(NFertReq/splits)
     FertApplied = 0
     FertAppNo = 0
-    
-    for d in NBalance[CurrentConfig['EstablishDate']:CurrentConfig['HarvestDate']].index:
-        yesterday = d - dt.timedelta(days=1)
-        if (NBalance.loc[d,'SoilMineralN'] < trigger) and (FertApplied < NFertReq):
-            NBalance.loc[d:,'SoilMineralN'] = NBalance.loc[yesterday:,'SoilMineralN'] + (NAppn * efficiency)
-            NBalance.loc[d,'FertiliserN'] = NAppn
+    ffd = (CurrentConfig['HarvestDate'].astype(dt.datetime) - dt.timedelta(days=5)).strftime('%Y-%m-%d')
+    if splits>0:
+        for d in NBalance[CurrentConfig['EstablishDate']:ffd].index:
+            yesterday = d - dt.timedelta(days=1)
+            if (NBalance.loc[d,'SoilMineralN'] < trigger) and (FertApplied < NFertReq):
+                NBalance.loc[d:,'SoilMineralN'] = NBalance.loc[yesterday:,'SoilMineralN'] + (NAppn * efficiency)
+                NBalance.loc[d,'FertiliserN'] = NAppn
     NBalance.loc[:FieldConfig['MinNDate'],'SoilMineralN'] = np.nan
     return NBalance
 
 
-# -
-
-# ## App layout and callbacks
-
-# +
-# Empty the config files
-FieldConfigs = ['FieldNameInput','Location','HWEON','MinN','MinNDate']
-FieldConfig = pd.Series(index = FieldConfigs, data = [""]+[None]*4)
-FieldConfig.to_pickle("Field_Config.pkl")
-
-PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
-PreviousConfig.to_pickle("Previous_Config.pkl")
-
-CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
-CurrentConfig.to_pickle("Current_Config.pkl")
-
-FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
-FollowingConfig.to_pickle("Following_Config.pkl")
-
-import ast
-
-app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
-
-
-#Planting and Harvest date callback
-@app.callback(Output({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"children","id":ALL},'children'), 
-              Input({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), prevent_initial_call=True)
-def StateCrop(dates):
-    datedf = uic.makeDateDataDF(dash.callback_context.inputs_list,dates)
-    return uic.UpdateDatePickerOptions(datedf)
-
-# Crop type information callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":ALL},"children"),
-              Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"children","id":ALL},"children"),
-              Input({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
-              prevent_initial_call=True)
-def ChangeCrop(values):
-    if not any(values):
-        raise PreventUpdate
-    inputDF = uic.makeDataSeries(dash.callback_context.inputs_list,values)
-    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*14)
-    pos = dash.callback_context.outputs_list[0][0]['id']['pos']
-    return UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
-
-# Defoliation callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"},"children"),
-              Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
-              prevent_initial_call=True)
-def DefoliationOptions(dates):
-    datedf = pd.DataFrame.from_dict(dash.callback_context.inputs,orient='index',columns=['date'])
-    datedf.index = [x.replace(".date","") for x in datedf.index]
-    pos = dash.callback_context.outputs_list['id']['pos']
-    DefCheckMonths = []
-    if (datedf.iloc[0,0] != None) and (datedf.iloc[1,0] != None):
-        cropMonths = pd.date_range(dt.datetime.strptime(str(datedf.iloc[0,0]),'%Y-%m-%d'),
-                                   dt.datetime.strptime(str(datedf.iloc[1,0]),'%Y-%m-%d'),freq='MS')
-        DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
-    return [dcc.Checklist(id={"pos":"Previous_","Group":"Crop","subGroup":"defoliation","RetType":"value","id":"DefoliationDates"}, options = DefCheckMonths, value=[])]
-
-# Crop yield information callback
-@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'),
-              Input({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'), prevent_initial_call=True)
-def setInputValue(value):
-    pos = dash.callback_context.inputs_list[0]['id']['pos']
-    outp = dash.callback_context.inputs_list[0]['id']['id']
-    uic.updateConfig([outp],[value],pos+"Config.pkl")
-    return value
-
-# Activate Load buttons
-@app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":'LoadButton'},"children"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
-              prevent_initial_call=True)
-def FieldSet(selection):
-    if (selection == None): 
-        raise PreventUpdate
-    else:
-        loadbutton = html.Button("Load Config",id="LoadButton",style = {'width':'100%','height':'110%'})
-    return loadbutton
-
-# Activate Save button
-@app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"},"children"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
-              prevent_initial_call=True)
-def FieldSet(inputval):
-    if (inputval  == None):
-        raise PreventUpdate
-    else:
-        savebutton = html.Button("Save Config",id="SaveButton",style = {'width':'100%','height':'110%'})
-    return savebutton
-
-# Config load callback
-@app.callback(Output({"Group":"UI","id":ALL},"children"),
-              Output("LLtext","children"),
-              Input("LoadButton","n_clicks"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
-              prevent_initial_call=True)
-def loadConfig(n_clicks,selection,inputval):
-    if n_clicks is None:
-        raise PreventUpdate
-    else:
-        if selection != None:
-            FieldName = selection
-        else:
-            FieldName = inputval
-        config = pd.read_pickle(FieldName+"_SavedConfig.pkl")
-        time = dt.datetime.now()
-        config["PreviousVal"].to_pickle("Previous_Config.pkl")
-        config["CurrentVal"].to_pickle("Current_Config.pkl")
-        config["FollowingVal"].to_pickle("Following_Config.pkl")
-        config["FieldVal"].to_pickle("Field_Config.pkl")
-    return (config["PreviousUI"], config["CurrentUI"], config["FollowingUI"], config["FieldUI"]), FieldName+" loaded at "+ str(time)
-
-# Config Save callback
-@app.callback(Output("LStext",'children'), 
-              Input("SaveButton","n_clicks"), 
-              Input({"Group":"UI","id":ALL},"children"),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
-              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
-              prevent_initial_call=True)
-def SaveConfig(n_clicks,UIs,selection,inputval):
-    if n_clicks is None:
-        raise PreventUpdate
-    else:
-        if selection != None:
-            FieldName = selection
-        else:
-            FieldName = inputval
-        ConfigDF = pd.Series(index=["FieldUI","PreviousUI","CurrentUI","FollowingUI","FieldVal","PreviousVal","CurrentVal","FollowingVal"],dtype=object)
-        ConfigDF["PreviousUI"] = UIs[0]
-        ConfigDF["CurrentUI"] = UIs[1]
-        ConfigDF["FollowingUI"] = UIs[2]
-        ConfigDF["PreviousUI"] = UIs[0]
-        ConfigDF["FieldUI"] = UIs[3]
-        ConfigDF["PreviousVal"] = pd.read_pickle("Previous_Config.pkl")
-        ConfigDF["CurrentVal"] = pd.read_pickle("Current_Config.pkl")
-        ConfigDF["FollowingVal"] = pd.read_pickle("Following_Config.pkl")
-        ConfigDF["FieldVal"] = pd.read_pickle("Field_Config.pkl")
-        ConfigDF.to_pickle(FieldName+"_SavedConfig.pkl")
-        time = dt.datetime.now()
-        return "Last Save " + str(time)
-
-# Field data callbacks
-@app.callback(Output({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
-              Output({"Group":"Field","subGroup":ALL,"RetType":"date","id":ALL},'date'),
-              Input({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
-              Input({"Group":"Field","subGroup":ALL,"RetType":"date","id":ALL},'date'),
-              prevent_initial_call=True)
-def setInputValue(values,date):
-    inputDF = uic.makeDataSeries(dash.callback_context.inputs_list[:-1],values)
-    for v in inputDF.index:
-        if inputDF[v] != None:
-            uic.updateConfig([v],[inputDF[v]],"Field_Config.pkl")
-    uic.updateConfig(['MinNDate'],[np.datetime64(date[0])],"Field_Config.pkl")    
-    return values,date
-
-#Validate config callback to activate "Update NBalance" button for running the model
-@app.callback(Output("RefreshButtonRow",'children'),
-              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
-              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"date","id":ALL},'date'),
-              Input({"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
-              prevent_initial_call=True)
-def checkConfigAndEnableUpdate(values,dates,field):
-    return uic.validateConfigs()
-
-@app.callback(
-    Output('CropUptakeGraph','figure'),
-    Output('MineralNGraph','figure'),
-    Output('NInputsGraph','figure'),
-    Input('RefreshButton','n_clicks'), prevent_initial_call=True)
-def RefreshGraphs(n_clicks):
-    if n_clicks is None:
-        raise PreventUpdate
-    else:
-        PreviousConfig = pd.read_pickle("Previous_Config.pkl")
-        CurrentConfig = pd.read_pickle("Current_Config.pkl")
-        FollowingConfig = pd.read_pickle("Following_Config.pkl")
-        FieldConfig = pd.read_pickle("Field_Config.pkl")
-        start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
-        end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
-        Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
-        NBalance = MakeNBalanceFrame(Tt.index)
-        NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
-        NBalance = CalculateSOMMineralisation(Tt,NBalance)
-        NBalance = CalculateResidueMineralisation(Tt,NBalance)
-        NBalance = CalculateSoilMineralN(NBalance)
-        trigger = 30
-        efficiency = 0.8
-        splits = 3
-        NBalance = CalculateFertiliserApplications(NBalance,trigger,efficiency,splits)
-        Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
-        return CropNGraph(NBalance,start,end), SoilNGraph(NBalance,start,end,trigger,Fertiliser), NInputsGraph(NBalance,start,end)
-
-SavedConfigFiles = []
-mydir = 'C:\GitHubRepos\SVS'
-for File in os.listdir(mydir):
-    if File.endswith('.pkl'):
-        if ('_SavedConfig' in File):
-            SavedConfigFiles.append(File.replace('_SavedConfig.pkl',''))
-            
-app.layout = html.Div([
-                dbc.Row([
-                    dbc.Col([dbc.Row(dbc.Card(CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date',''),
-                                             style={"height": "100%"}),
-                                     style={"height": "45vh"},
-                                     id={"Group":"UI","id":"PreviousConfigUI"}),
-                             dbc.Row(dbc.Card(CropInputs('Current_',EndUseCatagoriesDropdown,True, '',''),
-                                             style={"height": "100%"}),
-                                     style={"height": "45vh"},
-                                     id={"Group":"UI","id":"CurrentConfigUI"}),
-                             dbc.Row(dbc.Card(CropInputs('Following_',EndUseCatagoriesDropdown,True, '',''),
-                                             style={"height": "100%"}),
-                                     style={"height": "45vh"},
-                                     id={"Group":"UI","id":"FollowingConfigUI"})
-                            ],
-                           width = 4),
-                    dbc.Col([dbc.Row(html.H1("Field Name",
-                                             style=headingStyle,
-                                             id="FNtext")),
-                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Select saved field',
-                                                  style = adStyle,
-                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"})),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([dbc.Col(width=6),
-                                      dbc.Col(html.Button("Load Config", disabled=True, 
-                                                 style = {'width':'100%','height':'110%'},
-                                                 id="LoadButton"),
-                                              width = 6,
-                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"LoadButton"})
-                                      ]),
-                             dbc.Row(html.Div("Last Load",
-                                              style=dict(display='flex', justifyContent='right'),
-                                              id="LLtext")),
-                             dbc.Row(dbc.Col(dcc.Input(type="text",debounce=True, placeholder='or type new field name',min=0,
-                                                        style = {'width':'100%'},
-                                              id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"}),
-                                              width = 12)),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([dbc.Col(width=6),
-                                      dbc.Col(html.Button("Save Config",disabled=True,
-                                                          style = {'width':'100%','height':'110%'},
-                                                          id="SaveButton"),
-                                              width = 6,
-                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"})]),
-                             dbc.Row(html.Div("Last Save",
-                                              style=dict(display='flex', justifyContent='right'), 
-                                              id="LStext")),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row(html.H1("Field Location",
-                                            style=headingStyle)),
-                             dbc.Row(dcc.Dropdown(options = MetDropDown, placeholder='Select closest location',
-                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"Location"})),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row(html.H1("Soil Test Values",
-                                            style=headingStyle,)),
-                             dbc.Row([dbc.Col(html.Div("HWEON test"
-                                              ,style=dict(display='flex', justifyContent='right'), 
-                                              id="HWEONtext"),
-                                              width = 6),
-                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
-                                                       style= {'width':'100%'},
-                                               id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"HWEON"}),
-                                            width = 5)]),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([dbc.Col(html.Div("Mineral N test date", 
-                                              style=dict(display='flex', justifyContent='right'),
-                                              id="MinDatetext"),
-                                              width=6),
-                                     dbc.Col([dcc.DatePickerSingle(id={"Group":"Field","subGroup":"Soil","RetType":"date","id":"MinNDate"}, min_date_allowed=dt.date(2020, 1, 1),
-                                                    max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
-                                                    placeholder = 'Select date',display_format='D-MMM-YYYY')],
-                                             style = {'width':'10%'},
-                                             id={"Group":"Field","subGroup":"Soil","RetType":"children","id":"MinNDate"}, 
-                                             width=5, align='center')]), 
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([dbc.Col(html.Div("Mineral N test"
-                                              ,style=dict(display='flex', justifyContent='right', 
-                                              id="MinNtext")),
-                                             width = 6),
-                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
-                                                       style= {'width':'100%'},
-                                                       id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"MinN"}),
-                                            width = 5)]),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([],style=brStyle),
-                             dbc.Row([dbc.Col(width =2),
-                                      dbc.Col(html.Button("Update NBalance",disabled=True,
-                                                         style={'width':'100%','height':'150%',"font-size":"150%"},
-                                                         id="RefreshButton"),
-                                            width = 10,
-                                            id="RefreshButtonRow")],
-                                     style={"width":"90%"}, align='center', justify="centre"),
-                             dbc.Row(html.H1(""))
-                            ],
-                            width = 2, 
-                            id={"Group":"UI","id":"FieldUI"}),
-                    dbc.Col([dcc.Loading(id='CropGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph')))),
-                             dcc.Loading(id='SoilGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph')))),
-                             dcc.Loading(id='InputsGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='NInputsGraph'))))
-                            ],
-                           width = 6)
-                        ], 
-                )
-                     ])
-# Run app and display result inline in the notebook
-app.run_server(mode='external')
 # +
 Positions = ['Previous_','Current_','Following_']
 Actions = ["EstablishDate", "HarvestDate"]
@@ -857,10 +559,14 @@ def validateConfigs():
         Config=pd.read_pickle(pos+"Config.pkl")
         NotSet += Config.isnull().sum()
     if NotSet > 0: 
-        return html.Button("Update NBalance",id="RefreshButton",disabled=True,style={'width':'100%','height':'150%',"font-size":"150%"})
+        return [html.Button("Update NBalance",disabled=True,
+                           style={'width':'100%','height':'150%',"font-size":"150%"},
+                           id="RefreshButton")]
     else: 
-        return html.Button("Update NBalance",id="RefreshButton",disabled=False,style={'width':'100%','height':'150%',"font-size":"150%"})
-
+        return [html.Button("Update NBalance",disabled=False,
+                           style={'width':'100%','height':'150%',"font-size":"150%"},
+                           id="RefreshButton")]
+    
 def updateConfig(keys,values,ConfigAddress):
     Config = pd.read_pickle(ConfigAddress)
     its = range(len(keys))
@@ -1286,6 +992,322 @@ def CropInputs(pos,EndUseCatagoriesDropdown,disableDates,EDatePHtext,HDatePHtext
                     id={"pos":pos,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"})],
             style=drStyle)],
     style={"height": "100%"},fluid=True)
+# -
+# ## App layout and callbacks
+
+# +
+# Empty the config files
+FieldConfigs = ['FieldNameInput','Location','HWEON','MinN','MinNDate','FertSplits']
+FieldConfig = pd.Series(index = FieldConfigs, data = [""]+[None]*5)
+FieldConfig.to_pickle("Field_Config.pkl")
+
+PreviousConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
+PreviousConfig.to_pickle("Previous_Config.pkl")
+
+CurrentConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
+CurrentConfig.to_pickle("Current_Config.pkl")
+
+FollowingConfig = pd.Series(index = uic.CropConfigs,data = [None]*15+[[]])
+FollowingConfig.to_pickle("Following_Config.pkl")
+
+import ast
+
+app = JupyterDash(external_stylesheets=[dbc.themes.SLATE])
+
+
+#Planting and Harvest date callback
+@app.callback(Output({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"children","id":ALL},'children'), 
+              Input({"pos":ALL,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), prevent_initial_call=True)
+def StateCrop(dates):
+    datedf = uic.makeDateDataDF(dash.callback_context.inputs_list,dates)
+    return uic.UpdateDatePickerOptions(datedf)
+
+# Crop type information callback
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"children","id":ALL},"children"),
+              Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"children","id":ALL},"children"),
+              Input({"pos":MATCH,"Group":"Crop","subGroup":"Catagory","RetType":"value","id":ALL},"value"),
+              prevent_initial_call=True)
+def ChangeCrop(values):
+    if not any(values):
+        raise PreventUpdate
+    inputDF = uic.makeDataSeries(dash.callback_context.inputs_list,values)
+    outputDF = uic.makeDataSeries(dash.callback_context.outputs_list,[""]*14)
+    pos = dash.callback_context.outputs_list[0][0]['id']['pos']
+    return UpdateCropOptions(pos,inputDF,outputDF,CropCoefficients,EndUseCatagoriesDropdown)
+
+# Defoliation callback
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"defoliation","RetType":"children","id":"DefoliationDates"},"children"),
+              Input({"pos":MATCH,"Group":"Crop","subGroup":"Event","RetType":"date","id":ALL},'date'), 
+              prevent_initial_call=True)
+def DefoliationOptions(dates):
+    datedf = pd.DataFrame.from_dict(dash.callback_context.inputs,orient='index',columns=['date'])
+    datedf.index = [x.replace(".date","") for x in datedf.index]
+    pos = dash.callback_context.outputs_list['id']['pos']
+    DefCheckMonths = []
+    if (datedf.iloc[0,0] != None) and (datedf.iloc[1,0] != None):
+        cropMonths = pd.date_range(dt.datetime.strptime(str(datedf.iloc[0,0]),'%Y-%m-%d'),
+                                   dt.datetime.strptime(str(datedf.iloc[1,0]),'%Y-%m-%d'),freq='MS')
+        DefCheckMonths = [{'label':MonthIndexs.loc[i.month,'Name'],'value':i} for i in cropMonths]    
+    return [dcc.Checklist(id={"pos":"Previous_","Group":"Crop","subGroup":"defoliation","RetType":"value","id":"DefoliationDates"}, options = DefCheckMonths, value=[])]
+
+# Crop yield information callback
+@app.callback(Output({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'),
+              Input({"pos":MATCH,"Group":"Crop","subGroup":"data","RetType":"value","id":MATCH},'value'), prevent_initial_call=True)
+def setInputValue(value):
+    pos = dash.callback_context.inputs_list[0]['id']['pos']
+    outp = dash.callback_context.inputs_list[0]['id']['id']
+    uic.updateConfig([outp],[value],pos+"Config.pkl")
+    return value
+
+# Activate Load buttons
+@app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":'LoadButton'},"children"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              prevent_initial_call=True)
+def FieldSet(selection):
+    if (selection == None): 
+        raise PreventUpdate
+    else:
+        loadbutton = html.Button("Load Config",id="LoadButton",style = {'width':'100%','height':'110%'})
+    return loadbutton
+
+# Activate Save button
+@app.callback(Output({"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"},"children"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
+              prevent_initial_call=True)
+def FieldSet(inputval):
+    if (inputval  == None):
+        raise PreventUpdate
+    else:
+        savebutton = html.Button("Save Config",id="SaveButton",style = {'width':'100%','height':'110%'})
+    return savebutton
+
+# Config load callback
+@app.callback(Output({"Group":"UI","id":ALL},"children"),
+              Output("LLtext","children"),
+              Input("LoadButton","n_clicks"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
+              prevent_initial_call=True)
+def loadConfig(n_clicks,selection,inputval):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+        if selection != None:
+            FieldName = selection
+        else:
+            FieldName = inputval
+        config = pd.read_pickle(FieldName+"_SavedConfig.pkl")
+        time = dt.datetime.now()
+        config["PreviousVal"].to_pickle("Previous_Config.pkl")
+        config["CurrentVal"].to_pickle("Current_Config.pkl")
+        config["FollowingVal"].to_pickle("Following_Config.pkl")
+        config["FieldVal"].to_pickle("Field_Config.pkl")
+    return (config["PreviousUI"], config["CurrentUI"], config["FollowingUI"], config["FieldUI"]), FieldName+" loaded at "+ str(time)
+
+# Config Save callback
+@app.callback(Output("LStext",'children'), 
+              Input("SaveButton","n_clicks"), 
+              Input({"Group":"UI","id":ALL},"children"),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"},'value'),
+              Input({"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"},'value'),
+              prevent_initial_call=True)
+def SaveConfig(n_clicks,UIs,selection,inputval):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+        if selection != None:
+            FieldName = selection
+        else:
+            FieldName = inputval
+        ConfigDF = pd.Series(index=["FieldUI","PreviousUI","CurrentUI","FollowingUI","FieldVal","PreviousVal","CurrentVal","FollowingVal"],dtype=object)
+        ConfigDF["PreviousUI"] = UIs[0]
+        ConfigDF["CurrentUI"] = UIs[1]
+        ConfigDF["FollowingUI"] = UIs[2]
+        ConfigDF["PreviousUI"] = UIs[0]
+        ConfigDF["FieldUI"] = UIs[3]
+        ConfigDF["PreviousVal"] = pd.read_pickle("Previous_Config.pkl")
+        ConfigDF["CurrentVal"] = pd.read_pickle("Current_Config.pkl")
+        ConfigDF["FollowingVal"] = pd.read_pickle("Following_Config.pkl")
+        ConfigDF["FieldVal"] = pd.read_pickle("Field_Config.pkl")
+        ConfigDF.to_pickle(FieldName+"_SavedConfig.pkl")
+        time = dt.datetime.now()
+        return "Last Save " + str(time)
+
+# Field data callbacks
+@app.callback(Output({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
+              Output({"Group":"Field","subGroup":ALL,"RetType":"date","id":ALL},'date'),
+              Input({"Group":"Field","subGroup":ALL,"RetType":"value","id":ALL},'value'),
+              Input({"Group":"Field","subGroup":ALL,"RetType":"date","id":ALL},'date'),
+              prevent_initial_call=True)
+def setInputValue(values,date):
+    inputDF = uic.makeDataSeries(dash.callback_context.inputs_list[:-1],values)
+    for v in inputDF.index:
+        if inputDF[v] != None:
+            uic.updateConfig([v],[inputDF[v]],"Field_Config.pkl")
+    uic.updateConfig(['MinNDate'],[np.datetime64(date[0])],"Field_Config.pkl")    
+    return values,date
+
+#Validate config callback to activate "Update NBalance" button for running the model
+@app.callback(Output("RefreshButtonRow",'children'),
+              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
+              Input({"pos":ALL,"Group":ALL,"subGroup":ALL,"RetType":"date","id":ALL},'date'),
+              Input({"Group":ALL,"subGroup":ALL,"RetType":"value","id":ALL},'value'), 
+              prevent_initial_call=True)
+def checkConfigAndEnableUpdate(values,dates,field):
+    return uic.validateConfigs()
+
+@app.callback(
+    Output('CropUptakeGraph','figure'),
+    Output('MineralNGraph','figure'),
+    Output('NInputsGraph','figure'),
+    Input('RefreshButton','n_clicks'), prevent_initial_call=True)
+def RefreshGraphs(n_clicks):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+        PreviousConfig = pd.read_pickle("Previous_Config.pkl")
+        CurrentConfig = pd.read_pickle("Current_Config.pkl")
+        FollowingConfig = pd.read_pickle("Following_Config.pkl")
+        FieldConfig = pd.read_pickle("Field_Config.pkl")
+        start = PreviousConfig['HarvestDate'].astype(dt.datetime)-dt.timedelta(30)
+        end = FollowingConfig['HarvestDate'].astype(dt.datetime)+dt.timedelta(30)
+        Tt = CalculateMedianTt(PreviousConfig["EstablishDate"].astype(dt.datetime),FollowingConfig["HarvestDate"].astype(dt.datetime),metFiles[FieldConfig["Location"]])
+        NBalance = MakeNBalanceFrame(Tt.index)
+        NBalance = CalculateCropOutputs(Tt,CropCoefficients,NBalance)
+        NBalance = CalculateSOMMineralisation(Tt,NBalance)
+        NBalance = CalculateResidueMineralisation(Tt,NBalance)
+        NBalance = CalculateSoilMineralN(NBalance)
+        trigger = 30
+        efficiency = 0.8
+        splits = FieldConfig['FertSplits']
+        NBalance = CalculateFertiliserApplications(NBalance,trigger,efficiency,splits)
+        Fertiliser = NBalance.FertiliserN.where(NBalance.FertiliserN>0,np.nan).dropna()
+        return CropNGraph(NBalance,start,end), SoilNGraph(NBalance,start,end,trigger,Fertiliser), NInputsGraph(NBalance,start,end)
+
+SavedConfigFiles = []
+mydir = 'C:\GitHubRepos\SVS'
+for File in os.listdir(mydir):
+    if File.endswith('.pkl'):
+        if ('_SavedConfig' in File):
+            SavedConfigFiles.append(File.replace('_SavedConfig.pkl',''))
+            
+app.layout = html.Div([
+                dbc.Row([
+                    dbc.Col([dbc.Row(dbc.Card(CropInputs('Previous_',EndUseCatagoriesDropdown,False,'Select Planting Date',''),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
+                                     id={"Group":"UI","id":"PreviousConfigUI"}),
+                             dbc.Row(dbc.Card(CropInputs('Current_',EndUseCatagoriesDropdown,True, '',''),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
+                                     id={"Group":"UI","id":"CurrentConfigUI"}),
+                             dbc.Row(dbc.Card(CropInputs('Following_',EndUseCatagoriesDropdown,True, '',''),
+                                             style={"height": "100%"}),
+                                     style={"height": "45vh"},
+                                     id={"Group":"UI","id":"FollowingConfigUI"})
+                            ],
+                           width = 4),
+                    dbc.Col([dbc.Row(html.H1("Field Name",
+                                             style=headingStyle,
+                                             id="FNtext")),
+                             dbc.Row(dcc.Dropdown(options = SavedConfigFiles, placeholder='Select saved field',
+                                                  style = adStyle,
+                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNamePicker"})),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width=6),
+                                      dbc.Col(html.Button("Load Config", disabled=True, 
+                                                 style = {'width':'100%','height':'110%'},
+                                                 id="LoadButton"),
+                                              width = 6,
+                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"LoadButton"})
+                                      ]),
+                             dbc.Row(html.Div("Last Load",
+                                              style=dict(display='flex', justifyContent='right'),
+                                              id="LLtext")),
+                             dbc.Row(dbc.Col(dcc.Input(type="text",debounce=True, placeholder='or type new field name',min=0,
+                                                        style = {'width':'100%'},
+                                              id={"Group":"Field","subGroup":"Place","RetType":"value","id":"FieldNameInput"}),
+                                              width = 12)),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width=6),
+                                      dbc.Col(html.Button("Save Config",disabled=True,
+                                                          style = {'width':'100%','height':'110%'},
+                                                          id="SaveButton"),
+                                              width = 6,
+                                              id={"Group":"Field","subGroup":"FileButton","RetType":"children","id":"SaveButton"})]),
+                             dbc.Row(html.Div("Last Save",
+                                              style=dict(display='flex', justifyContent='right'), 
+                                              id="LStext")),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row(html.H1("Field Location",
+                                            style=headingStyle)),
+                             dbc.Row(dcc.Dropdown(options = MetDropDown, placeholder='Select closest location',
+                                                  id={"Group":"Field","subGroup":"Place","RetType":"value","id":"Location"})),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row(html.H1("Soil Test Values",
+                                            style=headingStyle,)),
+                             dbc.Row([dbc.Col(html.Div("HWEON test"
+                                              ,style=dict(display='flex', justifyContent='right'), 
+                                              id="HWEONtext"),
+                                              width = 6),
+                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
+                                                       style= {'width':'100%'},
+                                               id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"HWEON"}),
+                                            width = 5)]),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(html.Div("Mineral N test date", 
+                                              style=dict(display='flex', justifyContent='right'),
+                                              id="MinDatetext"),
+                                              width=6),
+                                     dbc.Col([dcc.DatePickerSingle(id={"Group":"Field","subGroup":"Soil","RetType":"date","id":"MinNDate"}, min_date_allowed=dt.date(2020, 1, 1),
+                                                    max_date_allowed=dt.date(2025, 12, 31), initial_visible_month=dt.date(2021, 5, 15),
+                                                    placeholder = 'Select date',display_format='D-MMM-YYYY')],
+                                             style = {'width':'10%'},
+                                             id={"Group":"Field","subGroup":"Soil","RetType":"children","id":"MinNDate"}, 
+                                             width=5, align='center')]), 
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(html.Div("Mineral N test"
+                                              ,style=dict(display='flex', justifyContent='right', 
+                                              id="MinNtext")),
+                                             width = 6),
+                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
+                                                       style= {'width':'100%'},
+                                                       id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"MinN"}),
+                                            width = 5)]),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row(html.H1("Fertiliser info",
+                                            style=headingStyle,)),
+                             dbc.Row([dbc.Col(html.Div("Fertiliser Splits"
+                                              ,style=dict(display='flex', justifyContent='right', 
+                                              id="SplitsText")),
+                                             width = 6),
+                                     dbc.Col(dcc.Input(type="number", placeholder='Enter value',min=0,
+                                                       style= {'width':'100%'},
+                                                       id={"Group":"Field","subGroup":"Soil","RetType":"value","id":"FertSplits"}),
+                                            width = 5)]),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([],style=brStyle),
+                             dbc.Row([dbc.Col(width =2),
+                                      dbc.Col([html.Button("Update NBalance",disabled=True,
+                                                         style={'width':'100%','height':'150%',"font-size":"150%"},
+                                                         id="RefreshButton")],
+                                            width = 10,
+                                            id="RefreshButtonRow")],
+                                     style={"width":"90%"}, align='center', justify="centre"),
+                             dbc.Row(html.H1(""))
+                            ],
+                            width = 2, 
+                            id={"Group":"UI","id":"FieldUI"}),
+                    dbc.Col([dcc.Loading(id='CropGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='CropUptakeGraph')))),
+                             dcc.Loading(id='SoilGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='MineralNGraph')))),
+                             dcc.Loading(id='InputsGraphLoad',children = dbc.Row(dbc.Card(dcc.Graph(id='NInputsGraph'))))
+                            ],
+                           width = 6)
+                        ], 
+                )
+                     ])
+# Run app and display result inline in the notebook
+app.run_server(mode='external')
 # -
 
 
