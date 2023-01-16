@@ -1,0 +1,10 @@
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\netstandard2.0\SVSModel.deps.json
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\netstandard2.0\SVSModel.dll
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\netstandard2.0\SVSModel.pdb
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.csproj.AssemblyReference.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.GeneratedMSBuildEditorConfig.editorconfig
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.AssemblyInfoInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.AssemblyInfo.cs
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.csproj.CoreCompileInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.dll
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\netstandard2.0\SVSModel.pdb

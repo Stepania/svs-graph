@@ -1,0 +1,13 @@
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net5.0-windows\SVSModel.deps.json
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net5.0-windows\SVSModel.runtimeconfig.json
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net5.0-windows\SVSModel.runtimeconfig.dev.json
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net5.0-windows\SVSModel.dll
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net5.0-windows\SVSModel.pdb
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.csproj.AssemblyReference.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.GeneratedMSBuildEditorConfig.editorconfig
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.AssemblyInfoInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.AssemblyInfo.cs
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.csproj.CoreCompileInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.dll
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.pdb
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net5.0-windows\SVSModel.genruntimeconfig.cache
