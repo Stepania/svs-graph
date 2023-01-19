@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Deedle" Version="3.0.0" />
     <PackageReference Include="ExcelDna.AddIn" Version="1.6.0" />
     <PackageReference Include="ExcelDna.Integration" Version="1.6.0" />
     <PackageReference Include="GenericParser" Version="1.1.6" />

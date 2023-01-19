@@ -43,6 +43,10 @@
         "net48": {
           "targetAlias": "net4.8-windows",
           "dependencies": {
+            "Deedle": {
+              "target": "Package",
+              "version": "[3.0.0, )"
+            },
             "ExcelDna.AddIn": {
               "target": "Package",
               "version": "[1.6.0, )"
@@ -50,6 +54,14 @@
             "ExcelDna.Integration": {
               "target": "Package",
               "version": "[1.6.0, )"
+            },
+            "GenericParser": {
+              "target": "Package",
+              "version": "[1.1.6, )"
+            },
+            "Microsoft.Data.Analysis": {
+              "target": "Package",
+              "version": "[0.20.0, )"
             },
             "Microsoft.NETFramework.ReferenceAssemblies": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
