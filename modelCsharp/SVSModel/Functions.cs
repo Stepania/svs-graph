@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Helper
 {
@@ -65,6 +66,20 @@ namespace Helper
             for (int d = 0; d < sv.Length; d++)
                 sv[d] = scaller[d] * final * correction;
             return sv;
+        }
+
+        /// <summary>
+        /// Creates an array of dates for the duration of the simulation
+        /// </summary>
+        /// <param name="start">Date to start series</param>
+        /// <param name="end">Date to end series</param>
+        /// <returns>a continious array of dates between the start and end specified</returns>
+        public static DateTime[] SimDates(DateTime start, DateTime end)
+        {
+            List<DateTime> ret = new List<DateTime>();
+            for (DateTime d = start; d < end; d = d.AddDays(1))
+                ret.Add(d);
+            return ret.ToArray();
         }
     }
 }
