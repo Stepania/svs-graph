@@ -24,7 +24,7 @@ namespace Helper
         }
 
         /// <summary>
-        /// Function to convert a 2D array with a row of keys and a row of values into a dictions
+        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
         /// <returns>dictionary converted from arr</returns>
@@ -35,6 +35,22 @@ namespace Helper
             for (int r = 0; r < Nrows; r++)
             {
                 dict.Add(arr[r, 0].ToString(), arr[r, 1]);
+            }
+            return dict;
+        }
+
+        /// <summary>
+        /// Function to convert a 2D array with a row of date keys and a row of values into a dictionary
+        /// </summary>
+        /// <param name="date">An array of DateTimes</param>
+        /// <param name="values">An array of doubles</param>
+        /// <returns>dictionary converted from arr</returns>
+        public static Dictionary<DateTime, double> dictMaker(DateTime[] date, double[] values)
+        {
+            Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
+            for (int r = 0; r < date.Length; r++)
+            {
+                dict.Add(date[r], values[r]);
             }
             return dict;
         }

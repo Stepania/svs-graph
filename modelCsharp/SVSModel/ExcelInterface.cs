@@ -33,7 +33,7 @@ namespace Helper
             
             Dictionary<string, object> _params = Functions.dictMaker(Params);
 
-            return CropModel.CalculateCropOutputs(AccumulateTt(Tt), config, _params);
+            return CropModel.CalculateCropOutputs(AccumulateTt(Tt), config, _params,true);
         }
     }
 }
