@@ -1,114 +1,89 @@
-﻿using Microsoft.Data.Analysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Helper;
-using static System.Math;
 
 namespace SVSModel
 {
     public class CropModel
     {
-        static double[] scaledValues(double[] scaller, double final, double correction)
-        {
-            double[] sv = new double[scaller.Length];
-            for (int d = 0; d < sv.Length; d++)
-                sv[d] = scaller[d] * final * correction;
-            return sv;
-        }
-
-        public static Dictionary<string, double> PropnMaxDM = new Dictionary<string, double>() { { "Seed", 0.0066 },{ "Seedling", 0.015 },{ "Vegetative", 0.5},{ "EarlyReproductive",0.75},
-            { "MidReproductive",0.86},{  "LateReproductive",0.95},{"Maturity",0.9933},{"Late",0.9995 } };
-        public static Dictionary<string, double> PropnTt = new Dictionary<string, double>() { { "Seed", 0 },{ "Seedling", 0.16 },{ "Vegetative", 0.5},{ "EarlyReproductive",0.61},
-            { "MidReproductive",0.69},{  "LateReproductive",0.8},{"Maturity",1.0},{"Late",1.27} };
-
+        /// <summary>
+        /// Returns daily N uptake over the duration of the Tt input data for Root, Stover, Product and loss N as well as cover and root depth
+        /// </summary>
+        /// <param name="Tt">An array containing the accumulated thermal time for the duration of the crop</param>
+        /// <param name="Config">A dictionary containing configuration information such as crop type and harvest stage</param>
+        /// <param name="Params"></param>
+        /// <returns>A 2D array of crop model outputs</returns>
         public static object[,] CalculateCropOutputs(double[] Tt, Dictionary<string, object> Config, Dictionary<string, object> Params)
         {
             int durat = Tt.Length;
+            // Derive Crop Parameters
             double Tt_Harv = Tt.Last();
-            double Tt_estab = Tt_Harv * (PropnTt[Config["EstablishStage"].ToString()] / PropnTt[Config["HarvestStage"].ToString()]);
-            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / PropnTt[Config["HarvestStage"].ToString()]);
+            double Tt_estab = Tt_Harv * (Constants.PropnTt[Config["EstablishStage"].ToString()] / Constants.PropnTt[Config["HarvestStage"].ToString()]);
+            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[Config["HarvestStage"].ToString()]);
             double b_Biomass = Xo_Biomass * .25;
             double T_mat = Xo_Biomass * 2.2222;
-            double T_maxRD = PropnTt["EarlyReproductive"] * T_mat;
-            double T_sen = PropnTt["MidReproductive"] * T_mat;
+            double T_maxRD = Constants.PropnTt["EarlyReproductive"] * T_mat;
+            double T_sen = Constants.PropnTt["MidReproductive"] * T_mat;
             double Xo_cov = Xo_Biomass * 0.4 / (double)Params["rCover"];
             double b_cov = Xo_cov * 0.2;
             double a_harvestIndex = (double)Params["Typical HI"] - (double)Params["HI Range"];
             double b_harvestIndex = (double)Params["HI Range"] / (double)Params["Typical Yield"];
-            // Calculate fitted patterns
-            double[] BiomassScaller = new double[durat];
-            double[] CoverScaller = new double[durat];
-            double[] RootDepthScaller = new double[durat];
-            double fRootN = new double();
-            double fStoverN = new double();
-            double fSaleableProductN = new double();
-            double fFieldLossN = new double();
-            double fDressingLossN = new double();
-            double fCropN = new double();
-            double StageCorrection = new double();
+            double stageCorrection = 1 / Constants.PropnMaxDM[Config["HarvestStage"].ToString()];
+
+            // derive crop Harvest State Variables 
+            double fSaleableYieldDwt = (double)Config["SaleableYield"];
+            double fFieldLossPct = (double)Config["FieldLoss"];
+            double fFreshTotalProductWt = fSaleableYieldDwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - (double)Config["DressingLoss"] / 100));
+                  // Crop Failure.  If yield is very low or field loss is very high assume complete crop failure.  Uptake equation are too sensitive saleable yields close to zero and field losses close to 100
+            if ((((double)Config["SaleableYield"] * (double)Config["Units"]) < ((double)Params["Typical Yield"] * 0.05)) || ((double)Config["FieldLoss"] > 95))
+            {
+                fFieldLossPct = 100;
+                fFreshTotalProductWt = (double)Params["Typical Yield"] * (1 / (1 - (double)Params["Typical Dressing Loss %"] / 100));
+            }
+            double fTotalProductDwt = fFreshTotalProductWt * (double)Config["Units"] * (1 - (double)Config["MoistureContent"] / 100);
+            double fFieldLossDwt = fTotalProductDwt * fFieldLossPct / 100;
+            double fFieldLossN = fFieldLossDwt * (double)Params["Product [N]"] / 100;
+            double fDressingLossDwt = fTotalProductDwt * (double)Config["DressingLoss"] / 100;
+            double fDressingLossN = fDressingLossDwt * (double)Params["Product [N]"] / 100;
+            double fSaleableProductDwt = fTotalProductDwt - fFieldLossDwt - fDressingLossDwt;
+            double fSaleableProductN = fSaleableProductDwt * (double)Params["Product [N]"] / 100;
+            double HI = a_harvestIndex + fFreshTotalProductWt * b_harvestIndex;
+            double fStoverDwt = fTotalProductDwt * 1 / HI - fTotalProductDwt;
+            double fStoverN = fStoverDwt * (double)Params["Stover [N]"] / 100;
+            double fRootDwt = (fStoverDwt + fTotalProductDwt) * (double)Params["P Root"];
+            double fRootN = fRootDwt * (double)Params["Root [N]"] / 100;
+            double fCropN = fRootN + fStoverN + fFieldLossN + fDressingLossN + fSaleableProductN;
+                        
+            //Daily time-step, calculate Daily Scallers to give in crop patterns
+            double[] biomassScaller = new double[durat];
+            double[] coverScaller = new double[durat];
+            double[] rootDepthScaller = new double[durat];
             for (int d = 0; d < durat; d++)
             {
-                BiomassScaller[d] = (1 / (1 + Math.Exp(-((Tt[d] - Xo_Biomass) / (b_Biomass)))));
+                biomassScaller[d] = (1 / (1 + Math.Exp(-((Tt[d] - Xo_Biomass) / (b_Biomass)))));
                 if (Tt[d] < T_maxRD)
-                    RootDepthScaller[d] = Tt[d] / T_maxRD;
+                    rootDepthScaller[d] = Tt[d] / T_maxRD;
                 else
-                    RootDepthScaller[d] = 1;
+                    rootDepthScaller[d] = 1;
                 if (Tt[d] < T_sen)
-                    CoverScaller[d] = 1 / (1 + Math.Exp(-((Tt[d] - Xo_cov) / b_cov)));
+                    coverScaller[d] = 1 / (1 + Math.Exp(-((Tt[d] - Xo_cov) / b_cov)));
                 else
-                    CoverScaller[d] = (1 - (Tt[d] - T_sen) / (T_mat - T_sen));
-                double fSaleableYieldDwt = (double)Config["SaleableYield"];
-                double fFieldLossPct = (double)Config["FieldLoss"];
-                double fFreshTotalProductWt = fSaleableYieldDwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - (double)Config["DressingLoss"] / 100));
-                // Crop Failure.  If yield is very low or field loss is very high assume complete crop failure.  Uptake equation are too sensitive saleable yields close to zero and field losses close to 100
-                if ((((double)Config["SaleableYield"] * (double)Config["Units"]) < ((double)Params["Typical Yield"] * 0.05)) || ((double)Config["FieldLoss"] > 95))
-                {
-                    fSaleableYieldDwt = (double)Params["Typical Yield"];
-                    fFieldLossPct = 100;
-                    fFreshTotalProductWt = (double)Params["Typical Yield"] * (1 / (1 - (double)Params["Typical Dressing Loss %"] / 100));
-                }
-                double fTotalProductDwt = fFreshTotalProductWt * (double)Config["Units"] * (1 - (double)Config["MoistureContent"] / 100);
-                double fFieldLossDwt = fTotalProductDwt * fFieldLossPct / 100;
-                fFieldLossN = fFieldLossDwt * (double)Params["Product [N]"] / 100;
-                double fDressingLossDwt = fTotalProductDwt * (double)Config["DressingLoss"] / 100;
-                fDressingLossN = fDressingLossDwt * (double)Params["Product [N]"] / 100;
-                double fSaleableProductDwt = fTotalProductDwt - fFieldLossDwt - fDressingLossDwt;
-                fSaleableProductN = fSaleableProductDwt * (double)Params["Product [N]"] / 100;
-                double HI = a_harvestIndex + fFreshTotalProductWt * b_harvestIndex;
-                double fStoverDwt = fTotalProductDwt * 1 / HI - fTotalProductDwt;
-                fStoverN = fStoverDwt * (double)Params["Stover [N]"] / 100;
-                double fRootDwt = (fStoverDwt + fTotalProductDwt) * (double)Params["P Root"];
-                fRootN = fRootDwt * (double)Params["Root [N]"] / 100;
-                fCropN = fRootN + fStoverN + fFieldLossN + fDressingLossN + fSaleableProductN;
-                StageCorrection = 1 / PropnMaxDM[Config["HarvestStage"].ToString()];
+                    coverScaller[d] = Math.Max(0, (1 - (Tt[d] - T_sen) / (T_mat - T_sen)));
             }
-            double[] RootN = scaledValues(BiomassScaller, fRootN, StageCorrection);
-            double[] StoverN = scaledValues(BiomassScaller, fStoverN, StageCorrection);
-            double[] SaleableProductN = scaledValues(BiomassScaller, fSaleableProductN, StageCorrection);
-            double[] FieldLossN = scaledValues(BiomassScaller, fFieldLossN, StageCorrection);
-            double[] DressingLossN = scaledValues(BiomassScaller, fDressingLossN, StageCorrection);
-            double[] TotalCropN = scaledValues(BiomassScaller, fCropN, StageCorrection);
+            
+            // Multiply Harvest State Variables by Daily Scallers to give Daily State Variables
+            double[] RootN = Functions.scaledValues(biomassScaller, fRootN, stageCorrection);
+            double[] StoverN = Functions.scaledValues(biomassScaller, fStoverN, stageCorrection);
+            double[] SaleableProductN = Functions.scaledValues(biomassScaller, fSaleableProductN, stageCorrection);
+            double[] FieldLossN = Functions.scaledValues(biomassScaller, fFieldLossN, stageCorrection);
+            double[] DressingLossN = Functions.scaledValues(biomassScaller, fDressingLossN, stageCorrection);
+            double[] TotalCropN = Functions.scaledValues(biomassScaller, fCropN, stageCorrection);
             double[] CropUptakeN = Functions.calcDelta(TotalCropN);
-            double[] Cover = scaledValues(CoverScaller, (double)Params["A cover"], 1.0);
-            double[] RootDepth = scaledValues(RootDepthScaller, (double)Params["Max RD"], 1.0);
-            /* if len(c["DefoliationDates"])>0:
-            # CropN.sort_index(inplace=True)
-            # for dd in Config["DefoliationDates"]:
-            # StoverNtoRemove = (CropN.loc[('+ Stover',dd),'Values'].values[0] - CropN.loc[('Root',dd),'Values'].values[0]) * 0.7
-            # TotalNtoRemove = StoverNtoRemove
-            #if Params['Yield type'] == 'Standing DM':
-            # StoverNtoRemove=0
-            # TotalNtoRemove = (CropN.loc[('TotalCrop',dd),'Values'].values[0] - CropN.loc[('Root',dd),'Values'].values[0]) * 0.7
-            # DefCovFact = 0.3
-            # for d in Tt[dates][dd:].index:
-            # CropN.loc[('+ Stover',d),'Values'] = CropN.loc[('+ Stover',d),'Values'] - StoverNtoRemove 
-            # CropN.loc[('TotalCrop',d),'Values'] = CropN.loc[('TotalCrop',d),'Values'] - TotalNtoRemove
-            # CropWater.loc[('Cover',d),'Values'] = CropWater.loc[('Cover',d),'Values'] * DefCovFact
-            # DefCovFact = min(1.0,DefCovFact + Tt[d] * 0.00001) */
+            double[] Cover = Functions.scaledValues(coverScaller, (double)Params["A cover"], 1.0);
+            double[] RootDepth = Functions.scaledValues(rootDepthScaller, (double)Params["Max RD"], 1.0);
 
+            // Pack Daily State Variables into a 2D array so they can be output
             object[,] ret = new object[durat + 1, 9];
             ret[0, 0] = "RootN"; Functions.packRows(0, RootN, ref ret);
             ret[0, 1] = "StoverN"; Functions.packRows(1, StoverN, ref ret);

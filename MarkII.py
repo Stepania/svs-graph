@@ -204,15 +204,6 @@ def SoilNGraph(NBalance,start,end,trigger,Fertiliser):
 
 
 # +
-# plt.plot(runningmeanCU)
-
-# +
-# (NBalance.CropUptake * 10).plot()
-
-# +
-# FieldConfig
-
-# +
 # PreviousConfig = pd.read_pickle("Previous_Config.pkl")
 # CurrentConfig = pd.read_pickle("Current_Config.pkl")
 # FollowingConfig = pd.read_pickle("Following_Config.pkl")

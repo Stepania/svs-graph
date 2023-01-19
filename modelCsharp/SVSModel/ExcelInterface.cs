@@ -1,59 +1,39 @@
-﻿using ExcelDna.Integration;
-using GenericParsing;
-using Microsoft.Data.Analysis;
-using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using Microsoft.Data.Analysis;
 using SVSModel;
+using System.Collections.Generic;
 
 namespace Helper
 {
     public class MyFunctions
     {
-        [ExcelFunction(Description = "My first .NET function")]
-        public static double SumArray(double[] tempData)
+        /// <summary>
+        /// Returns an accumulation of Thermal time over the duration of the dialy input values
+        /// </summary>
+        /// <param name="Tt">array of daily average temperatures</param>
+        /// <returns>Array of accumulated thermal time</returns>
+        public static double[] AccumulateTt(double[] Tt)
         {
-            double sum = 0;
-            for (int i = 0; i < tempData.Length; i++)
-                sum += tempData[i];
-            return sum;
+            double[] tt = new double[Tt.Length];
+            tt[0] = Tt[0];
+            for (int d = 1; d < Tt.Length; d++)
+                tt[d] = tt[d - 1] + Tt[d];
+            return tt;
         }
 
-        public static double[] MultiplyMembers(double[] tempData, double factor)
-        {
-            for (int i = 0; i < tempData.Length; i++)
-                tempData[i] *= factor;
-            return tempData;
-        }
-
+        /// <summary>
+        /// Function that takes input data in 2D array format and packs in into a dictionary for use in model
+        /// </summary>
+        /// <param name="Tt">Array of accumulated thermal time over the duration of the crop</param>
+        /// <param name="Config">2D aray with parameter names and values for field configuration parameters</param>
+        /// <param name="Params">2D aray with parameter names and values for crop specific parameters</param>
+        /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
         public static object[,] GetDailyCropData(double[] Tt, object[,] Config, object[,] Params)
         {
             Dictionary<string, object> config = Functions.dictMaker(Config);
             
             Dictionary<string, object> _params = Functions.dictMaker(Params);
 
-            return CropModel.CalculateCropOutputs(Tt, config, _params);
-        }
-
-
-        public static object[,] TestCSharpReturn()
-        {
-            //return Met;
-
-            DataFrame data = DataFrame.LoadCsv("C:\\GitHubRepos\\Weather\\Broadfields\\LincolnCSV.met");
-
-            int rowCount = (int)data.Rows.Count;
-            int columnCount = (int)data.Columns.Count;
-            object[,] ret = new object[rowCount + 1, columnCount];
-            for (int currentColumn = 0; currentColumn < columnCount; currentColumn++)
-            {
-                ret[0, currentColumn] = data.Columns[currentColumn].Name;
-                for (int currentRow = 0; currentRow < rowCount; currentRow++)
-                {
-                    ret[currentRow + 1, currentColumn] = data.Rows[currentRow][currentColumn];
-                }
-            }
-            return ret;
+            return CropModel.CalculateCropOutputs(AccumulateTt(Tt), config, _params);
         }
     }
 }
