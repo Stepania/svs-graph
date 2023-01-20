@@ -121,6 +121,23 @@ namespace Helper
         }
 
         /// <summary>
+        /// Function that packs an array of variables into a specified column in a 2D array
+        /// </summary>
+        /// <param name="colInd">index position of the column</param>
+        /// <param name="column">array to be packed into column</param>
+        /// <param name="df">the 2D array that the column is to be packed into</param>
+        public static void packRows(int colInd, Dictionary<DateTime, double> column, ref object[,] df)
+        {
+            List<DateTime> dates = new List<DateTime>(column.Keys);
+            int currentRow = 0;
+            foreach (DateTime d in dates)
+            {
+                df[currentRow + 1, colInd] = column[d];
+                currentRow += 1;
+            }
+        }
+
+        /// <summary>
         /// Takes an array of daily scaller values (0-1) and multiplies them by the final value to give Daily State Variable values 
         /// </summary>
         /// <param name="scaller">2D array of daily values for 0-1 scaller</param>

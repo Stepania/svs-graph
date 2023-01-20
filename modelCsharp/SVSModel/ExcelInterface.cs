@@ -1,6 +1,5 @@
 ﻿using Microsoft.Data.Analysis;
 using SVSModel;
-using System;
 using System.Collections.Generic;
 
 namespace Helper
@@ -22,11 +21,10 @@ namespace Helper
         }
 
         /// <summary>
-        /// Function that takes input data in 2D array format and packs in into a dictionary for use in model
+        /// Takes theremal time and config data in 2D array format, calculates variables for a single crop and returns them in a 2D array)
         /// </summary>
         /// <param name="Tt">Array of accumulated thermal time over the duration of the crop</param>
-        /// <param name="Config">2D aray with parameter names and values for field configuration parameters</param>
-        /// <param name="Params">2D aray with parameter names and values for crop specific parameters</param>
+        /// <param name="Config">2D aray with parameter names and values for crop configuration parameters</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
         public static object[,] GetDailyCropData(double[] Tt, object[,] Config)
         {
@@ -42,10 +40,28 @@ namespace Helper
             List<string> dkeys = new List<string>(dCropConfig.Keys);
             foreach (string k in dkeys)
             {
-                dCropConfig[k] = Double.Parse(config[k].ToString()); // get crop position specific values from config for each value
+                if (k != "Units") //
+                {
+                    dCropConfig[k] = double.Parse(config[k].ToString()); // get crop position specific values from config for each value
+                }
+                else
+                {
+                    dCropConfig[k] = Constants.UnitConversions[k];
+                }
             }
 
             return (object[,])CropModel.CalculateCropOutputs(AccumulateTt(Tt), dCropConfig, sCropConfig, true);
+        }
+
+        /// <summary>
+        /// Function that takes input data in 2D array format calculates a N balance for all the crops specified (up to 3) and returns N balance variables in 2D array format
+        /// </summary>
+        /// <param name="Tt">Array of accumulated thermal time over the duration of the crop</param>
+        /// <param name="config">2D aray with parameter names and values for crop configuration parameters</param>
+        /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
+        public static object[,] GetNitrogenBalanceData(double[] Tt, Dictionary<string, object> config)
+        {
+            return NBalance.CalculateSoilNBalance(Tt, config);
         }
     }
 }

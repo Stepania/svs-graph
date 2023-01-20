@@ -22,9 +22,12 @@ namespace Helper
             {"EstablishStage",new object()},{"HarvestStage",new object()},{"ResidueTreatment",new object()}};
         public static System.Collections.IEnumerable cropPositions()
         {
-            yield return "prior";
-            yield return "current";
-            yield return "following";
+            yield return "Prior";
+            yield return "Current";
+            yield return "Following";
         }
+
+        /// <summary>Dictionary containing conversion from specified units to kg/ha which are the units that the model works in </summary>
+        public static Dictionary<string, double> UnitConversions = new Dictionary<string, double>() { { "T/ha", 1000 }, { "kg/ha", 1.0 } };
     }
 }
