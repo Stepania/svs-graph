@@ -11,7 +11,7 @@ namespace Helper
         /// </summary>
         /// <param name="Tt">array of daily average temperatures</param>
         /// <returns>Array of accumulated thermal time</returns>
-        public static double[] AccumulateTt(double[] Tt)
+        public static double[] AccumulateTtt(double[] Tt)
         {
             double[] tt = new double[Tt.Length];
             tt[0] = Tt[0];
@@ -19,6 +19,20 @@ namespace Helper
                 tt[d] = tt[d - 1] + Tt[d];
             return tt;
         }
+
+        /// <summary>
+        /// Function that takes input data in 2D array format calculates a N balance for all the crops specified (up to 3) and returns N balance variables in 2D array format
+        /// </summary>
+        /// <param name="Tt">Array of accumulated thermal time over the duration of the crop</param>
+        /// <param name="config">2D aray with parameter names and values for crop configuration parameters</param>
+        /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
+        public static object[,] GetDailyNBalance(double[] Tt, object[,] Config)
+        {
+            Dictionary<string, object> config = Functions.dictMaker(Config);
+
+            return NBalance.CalculateSoilNBalance(Tt, config);
+        }
+
 
         /// <summary>
         /// Takes theremal time and config data in 2D array format, calculates variables for a single crop and returns them in a 2D array)
@@ -50,18 +64,7 @@ namespace Helper
                 }
             }
 
-            return (object[,])CropModel.CalculateCropOutputs(AccumulateTt(Tt), dCropConfig, sCropConfig, true);
-        }
-
-        /// <summary>
-        /// Function that takes input data in 2D array format calculates a N balance for all the crops specified (up to 3) and returns N balance variables in 2D array format
-        /// </summary>
-        /// <param name="Tt">Array of accumulated thermal time over the duration of the crop</param>
-        /// <param name="config">2D aray with parameter names and values for crop configuration parameters</param>
-        /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
-        public static object[,] GetNitrogenBalanceData(double[] Tt, Dictionary<string, object> config)
-        {
-            return NBalance.CalculateSoilNBalance(Tt, config);
+            return (object[,])CropModel.CalculateCropOutputs(AccumulateTtt(Tt), dCropConfig, sCropConfig, true);
         }
     }
 }

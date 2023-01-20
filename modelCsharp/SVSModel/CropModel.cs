@@ -18,7 +18,7 @@ namespace SVSModel
         /// <returns>A 2D array of crop model outputs</returns>
         public static object CalculateCropOutputs(double[] Tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig, bool fullOutput =false)
         {
-            DateTime[] cropDates = Functions.SimDates(DateTime.FromOADate((double)dConfig["EstablishDate"]), DateTime.FromOADate((double)dConfig["HarvestDate"]));
+            DateTime[] cropDates = Functions.SimDates(dConfig["EstablishDate"],dConfig["HarvestDate"]);
             int durat = cropDates.Length;
             DataFrame data = DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\CropCoefficientTable.csv");
 

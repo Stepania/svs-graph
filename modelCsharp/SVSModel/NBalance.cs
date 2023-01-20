@@ -9,11 +9,11 @@ namespace SVSModel
     {
         public static object[,] CalculateSoilNBalance(double[] Tt, Dictionary<string, object> config)
         {
-            DateTime[] simDates = Functions.SimDates((DateTime)config["StartDate"], (DateTime)config["EndDate"]);
+            DateTime[] simDates = Functions.SimDates(config["PriorEstablishDate"],config["FollowingHarvestDate"]);
             
             //Initialise SoilN array
             Dictionary<DateTime,double> soilN = Functions.dictMaker(simDates, new double[simDates.Length]);
-            soilN[(DateTime)config["StartDate"]] = (double)config["InitialN"];
+            soilN[DateTime.FromOADate((double)config["PriorEstablishDate"])] = (double)config["InitialN"];
             
             //Calculate Crop N uptake
             Dictionary<DateTime, double> NUptake = Functions.dictMaker(simDates, new double[simDates.Length]);
@@ -23,7 +23,7 @@ namespace SVSModel
                 List<string> skeys = new List<string>(sCropConfig.Keys);
                 foreach (string k in skeys)
                 {
-                    sCropConfig[k] = config[k]; // get crop position specific values from config for each value
+                    sCropConfig[k] = config[p + k]; // get crop position specific values from config for each value
                 }
                 Dictionary<string, double> dCropConfig = Constants.CropConfigDoubles; //Set blank crop specific config dict
                 List<string> dkeys = new List<string>(dCropConfig.Keys);
@@ -31,17 +31,17 @@ namespace SVSModel
                 {
                     if (k != "Units") //
                     {
-                        dCropConfig[k] = double.Parse(config[k].ToString()); // get crop position specific values from config for each value
+                        dCropConfig[k] = double.Parse(config[p + k].ToString()); // get crop position specific values from config for each value
                     }
                     else
                     {
-                        dCropConfig[k] = Constants.UnitConversions[k];
+                        dCropConfig[k] = Constants.UnitConversions[config[p + k].ToString()];
                     }
                 }
 
                 //Calculate crop uptake and write into sim length dict
                 Dictionary<DateTime, double> cropsNUptake = (Dictionary<DateTime, double>)CropModel.CalculateCropOutputs(Tt, dCropConfig, sCropConfig);
-                foreach(KeyValuePair<DateTime,double> d in cropsNUptake)
+                foreach (KeyValuePair<DateTime, double> d in cropsNUptake)
                 {
                     NUptake[d.Key] = cropsNUptake[d.Key];
                 }
@@ -49,7 +49,7 @@ namespace SVSModel
 
 
             // Pack Daily State Variables into a 2D array so they can be output
-            object[,] soilNarry = new object[simDates.Length, 3];
+            object[,] soilNarry = new object[simDates.Length+1, 3];
             
             soilNarry[0, 0] = "Date"; Functions.packRows(0, simDates, ref soilNarry);
             soilNarry[0, 1] = "RootN"; Functions.packRows(1, soilN, ref soilNarry);

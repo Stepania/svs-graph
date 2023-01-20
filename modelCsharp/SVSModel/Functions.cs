@@ -158,10 +158,12 @@ namespace Helper
         /// <param name="start">Date to start series</param>
         /// <param name="end">Date to end series</param>
         /// <returns>a continious array of dates between the start and end specified</returns>
-        public static DateTime[] SimDates(DateTime start, DateTime end)
+        public static DateTime[] SimDates(object start, object end)
         {
+            DateTime sDate = DateTime.FromOADate((double)start);
+            DateTime eDate = DateTime.FromOADate((double)end);
             List<DateTime> ret = new List<DateTime>();
-            for (DateTime d = start; d < end; d = d.AddDays(1))
+            for (DateTime d = sDate; d < eDate; d = d.AddDays(1))
                 ret.Add(d);
             return ret.ToArray();
         }
