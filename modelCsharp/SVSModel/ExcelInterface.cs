@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Analysis;
 using SVSModel;
+using System;
 using System.Collections.Generic;
 
 namespace Helper
@@ -27,13 +28,24 @@ namespace Helper
         /// <param name="Config">2D aray with parameter names and values for field configuration parameters</param>
         /// <param name="Params">2D aray with parameter names and values for crop specific parameters</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
-        public static object[,] GetDailyCropData(double[] Tt, object[,] Config, object[,] Params)
+        public static object[,] GetDailyCropData(double[] Tt, object[,] Config)
         {
             Dictionary<string, object> config = Functions.dictMaker(Config);
-            
-            Dictionary<string, object> _params = Functions.dictMaker(Params);
 
-            return CropModel.CalculateCropOutputs(AccumulateTt(Tt), config, _params,true);
+            Dictionary<string, object> sCropConfig = Constants.CropConfigStrings; //Set blank crop specific config dict
+            List<string> skeys = new List<string>(sCropConfig.Keys);
+            foreach (string k in skeys)
+            {
+                sCropConfig[k] = config[k]; // get crop position specific values from config for each value
+            }
+            Dictionary<string, double> dCropConfig = Constants.CropConfigDoubles; //Set blank crop specific config dict
+            List<string> dkeys = new List<string>(dCropConfig.Keys);
+            foreach (string k in dkeys)
+            {
+                dCropConfig[k] = Double.Parse(config[k].ToString()); // get crop position specific values from config for each value
+            }
+
+            return (object[,])CropModel.CalculateCropOutputs(AccumulateTt(Tt), dCropConfig, sCropConfig, true);
         }
     }
 }

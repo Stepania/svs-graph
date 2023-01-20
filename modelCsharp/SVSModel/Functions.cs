@@ -39,6 +39,43 @@ namespace Helper
             return dict;
         }
 
+        /*// <summary>
+        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
+        /// </summary>
+        /// <param name="arr">2D arry to be converted</param>
+        /// <returns>dictionary converted from arr</returns>
+        public static Dictionary<string, double> dictMakerDouble(object[,] arr)
+        {
+            Dictionary<string, double> dict = new Dictionary<string, double>();
+            int Nrows = arr.GetLength(0);
+            for (int r = 0; r < Nrows; r++)
+            {
+                try
+                {
+                    dict.Add(arr[r, 0].ToString(), Double.Parse(arr[r, 1].ToString()));
+                }
+                catch { }
+            }
+            return dict;
+        }*/
+
+        /// <summary>
+        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
+        /// </summary>
+        /// <param name="arr">2D arry to be converted</param>
+        /// <returns>dictionary converted from arr</returns>
+        public static Dictionary<string, object> dictMaker(object[,] arr, string type)
+        {
+            Dictionary<string, object> dict = new Dictionary<string, object>();
+            int Nrows = arr.GetLength(0);
+            for (int r = 0; r < Nrows; r++)
+            {
+                dict.Add(arr[r, 0].ToString(), arr[r, 1]);
+            }
+            return dict;
+        }
+
+
         /// <summary>
         /// Function to convert a 2D array with a row of date keys and a row of values into a dictionary
         /// </summary>
@@ -68,7 +105,21 @@ namespace Helper
                 df[currentRow + 1, colInd] = column[currentRow];
             }
         }
-        
+
+        /// <summary>
+        /// Function that packs an array of variables into a specified column in a 2D array
+        /// </summary>
+        /// <param name="colInd">index position of the column</param>
+        /// <param name="column">array to be packed into column</param>
+        /// <param name="df">the 2D array that the column is to be packed into</param>
+        public static void packRows(int colInd, DateTime[] column, ref object[,] df)
+        {
+            for (int currentRow = 0; currentRow < column.Length; currentRow++)
+            {
+                df[currentRow + 1, colInd] = column[currentRow];
+            }
+        }
+
         /// <summary>
         /// Takes an array of daily scaller values (0-1) and multiplies them by the final value to give Daily State Variable values 
         /// </summary>

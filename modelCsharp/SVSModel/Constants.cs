@@ -12,5 +12,19 @@ namespace Helper
         /// <summary>Dictionary containing values for the proportion of thermal time to maturity that has accumulate at each predefined crop stage</summary>
         public static Dictionary<string, double> PropnTt = new Dictionary<string, double>() { { "Seed", 0 },{ "Seedling", 0.16 },{ "Vegetative", 0.5},{ "EarlyReproductive",0.61},
             { "MidReproductive",0.69},{  "LateReproductive",0.8},{"Maturity",1.0},{"Late",1.27} };
+
+        /// <summary>blank Dictionary containing keys for specific crop configuration doubles</summary>
+        public static Dictionary<string, double> CropConfigDoubles = new Dictionary<string, double>() {{"SaleableYield",new double()},{"Units",new double()},{"FieldLoss",new double()},
+            {"DressingLoss",new double()},{"MoistureContent",new double()},{ "EstablishDate",new double()},{"HarvestDate",new double()}};
+
+        /// <summary>blank Dictionary containing keys for specific crop configuration settings</summary>
+        public static Dictionary<string, object> CropConfigStrings = new Dictionary<string, object>() {{ "CropName",new object()},
+            {"EstablishStage",new object()},{"HarvestStage",new object()},{"ResidueTreatment",new object()}};
+        public static System.Collections.IEnumerable cropPositions()
+        {
+            yield return "prior";
+            yield return "current";
+            yield return "following";
+        }
     }
 }
