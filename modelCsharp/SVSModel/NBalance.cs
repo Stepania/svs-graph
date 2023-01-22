@@ -47,13 +47,12 @@ namespace SVSModel
                 }
             }
 
-
             // Pack Daily State Variables into a 2D array so they can be output
             object[,] soilNarry = new object[simDates.Length+1, 3];
             
             soilNarry[0, 0] = "Date"; Functions.packRows(0, simDates, ref soilNarry);
-            soilNarry[0, 1] = "RootN"; Functions.packRows(1, soilN, ref soilNarry);
-            soilNarry[0, 2] = "UptakeN"; Functions.packRows(1, NUptake, ref soilNarry);
+            soilNarry[0, 1] = "SoilMineralN"; Functions.packRows(1, soilN, ref soilNarry);
+            soilNarry[0, 2] = "UptakeN"; Functions.packRows(2, NUptake, ref soilNarry);
 
             return soilNarry;
         }
