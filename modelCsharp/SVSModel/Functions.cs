@@ -39,40 +39,49 @@ namespace Helper
             return dict;
         }
 
-        /*// <summary>
-        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
+        /// <summary>
+        /// Function to extract a row from a 2D array into a date indexed dictionary
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
+        /// <param name="colName">The header name of the column to extract</param>
         /// <returns>dictionary converted from arr</returns>
-        public static Dictionary<string, double> dictMakerDouble(object[,] arr)
+        public static Dictionary<DateTime, double> dictMaker(object[,] arr, string colName)
         {
-            Dictionary<string, double> dict = new Dictionary<string, double>();
+            Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
             int Nrows = arr.GetLength(0);
-            for (int r = 0; r < Nrows; r++)
+            int Ncols = arr.GetLength(1);
+            for (int c =0; c<Ncols;c++)
             {
-                try
+                if (arr[0,c].ToString() == colName)
                 {
-                    dict.Add(arr[r, 0].ToString(), Double.Parse(arr[r, 1].ToString()));
+                    for (int r = 1; r < Nrows; r++)
+                    {
+                        dict.Add((DateTime)arr[r, 0], Double.Parse(arr[r, c].ToString()));
+                    }
                 }
-                catch { }
             }
             return dict;
-        }*/
+        }
 
         /// <summary>
-        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
+        /// Function to extract a row from a 2D array into a date indexed dictionary
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
+        /// <param name="colName">The header name of the column to extract</param>
         /// <returns>dictionary converted from arr</returns>
-        public static Dictionary<string, object> dictMaker(object[,] arr, string type)
+        public static double GetFinal(object[,] arr, string colName)
         {
-            Dictionary<string, object> dict = new Dictionary<string, object>();
+            double ret = new double();
             int Nrows = arr.GetLength(0);
-            for (int r = 0; r < Nrows; r++)
+            int Ncols = arr.GetLength(1);
+            for (int c = 0; c < Ncols; c++)
             {
-                dict.Add(arr[r, 0].ToString(), arr[r, 1]);
+                if (arr[0, c].ToString() == colName)
+                {
+                    ret = Double.Parse(arr[Nrows - 1, c].ToString());
+                }
             }
-            return dict;
+            return ret;
         }
 
 

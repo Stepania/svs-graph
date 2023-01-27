@@ -16,7 +16,7 @@ namespace SVSModel
         /// <param name="sConfig">A dictionary containing configuration information such as crop type and harvest stage</param>
         /// <param name="Params"></param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object CalculateCropOutputs(double[] Tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig, bool fullOutput =false)
+        public static object[,] CalculateOutputs(double[] Tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig)
         {
             DateTime[] cropDates = Functions.SimDates(dConfig["EstablishDate"],dConfig["HarvestDate"]);
             int durat = cropDates.Length;
@@ -67,6 +67,7 @@ namespace SVSModel
             double fRootDwt = (fStoverDwt + fTotalProductDwt) * Params["P Root"];
             double fRootN = fRootDwt * Params["Root [N]"] / 100;
             double fCropN = fRootN + fStoverN + fFieldLossN + fDressingLossN + fSaleableProductN;
+
                         
             //Daily time-step, calculate Daily Scallers to give in crop patterns
             double[] biomassScaller = new double[durat];
@@ -96,28 +97,19 @@ namespace SVSModel
             double[] Cover = Functions.scaledValues(coverScaller, (double)Params["A cover"], 1.0);
             double[] RootDepth = Functions.scaledValues(rootDepthScaller, (double)Params["Max RD"], 1.0);
 
-            if (fullOutput)
-            {
-                // Pack Daily State Variables into a 2D array so they can be output
-                object[,] ret = new object[durat + 1, 10];
-                ret[0, 0] = "Date"; Functions.packRows(0, cropDates, ref ret);
-                ret[0, 1] = "RootN"; Functions.packRows(1, RootN, ref ret);
-                ret[0, 2] = "StoverN"; Functions.packRows(2, StoverN, ref ret);
-                ret[0, 3] = "SaleableProductN"; Functions.packRows(3, SaleableProductN, ref ret);
-                ret[0, 4] = "FieldLossN"; Functions.packRows(4, FieldLossN, ref ret);
-                ret[0, 5] = "DressingLossN"; Functions.packRows(5, DressingLossN, ref ret);
-                ret[0, 6] = "TotalCropN"; Functions.packRows(6, TotalCropN, ref ret);
-                ret[0, 7] = "CropUptakeN"; Functions.packRows(7, CropUptakeN, ref ret);
-                ret[0, 8] = "Cover"; Functions.packRows(8, Cover, ref ret);
-                ret[0, 9] = "RootDepth"; Functions.packRows(9, RootDepth, ref ret);
-                return ret;
-            }
-            else
-            {
-                Dictionary <DateTime,double> ret = new Dictionary<DateTime, double>();
-                ret = Functions.dictMaker(cropDates,CropUptakeN);
-                return ret;
-            }
+            // Pack Daily State Variables into a 2D array so they can be output
+            object[,] ret = new object[durat + 1, 10];
+            ret[0, 0] = "Date"; Functions.packRows(0, cropDates, ref ret);
+            ret[0, 1] = "RootN"; Functions.packRows(1, RootN, ref ret);
+            ret[0, 2] = "StoverN"; Functions.packRows(2, StoverN, ref ret);
+            ret[0, 3] = "SaleableProductN"; Functions.packRows(3, SaleableProductN, ref ret);
+            ret[0, 4] = "FieldLossN"; Functions.packRows(4, FieldLossN, ref ret);
+            ret[0, 5] = "DressingLossN"; Functions.packRows(5, DressingLossN, ref ret);
+            ret[0, 6] = "TotalCropN"; Functions.packRows(6, TotalCropN, ref ret);
+            ret[0, 7] = "CropUptakeN"; Functions.packRows(7, CropUptakeN, ref ret);
+            ret[0, 8] = "Cover"; Functions.packRows(8, Cover, ref ret);
+            ret[0, 9] = "RootDepth"; Functions.packRows(9, RootDepth, ref ret);
+            return ret;
         }
     }
 }

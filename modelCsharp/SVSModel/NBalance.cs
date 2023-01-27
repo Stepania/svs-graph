@@ -9,12 +9,10 @@ namespace SVSModel
     {
         public static object[,] CalculateSoilNBalance(double[] Tt, Dictionary<string, object> config)
         {
-            DateTime[] simDates = Functions.SimDates(config["PriorEstablishDate"],config["FollowingHarvestDate"]);
-            
-            //Initialise SoilN array
-            Dictionary<DateTime,double> soilN = Functions.dictMaker(simDates, new double[simDates.Length]);
-            soilN[DateTime.FromOADate((double)config["PriorEstablishDate"])] = (double)config["InitialN"];
-            
+            DateTime[] simDates = Functions.SimDates(config["PriorEstablishDate"], config["FollowingHarvestDate"]);
+            Dictionary<DateTime, double> tt = Functions.dictMaker(simDates, Tt);
+            Dictionary<string, double> RotationCropValues = Constants.RotationCropValues;
+
             //Calculate Crop N uptake
             Dictionary<DateTime, double> NUptake = Functions.dictMaker(simDates, new double[simDates.Length]);
             foreach (string p in Constants.cropPositions()) //Step through each crop position
@@ -39,20 +37,38 @@ namespace SVSModel
                     }
                 }
 
-                //Calculate crop uptake and write into sim length dict
-                Dictionary<DateTime, double> cropsNUptake = (Dictionary<DateTime, double>)CropModel.CalculateCropOutputs(Tt, dCropConfig, sCropConfig);
+                //Calculated outputs for each crop
+                object[,] cropsOutPuts = CropModel.CalculateOutputs(Tt, dCropConfig, sCropConfig);
+
+                //write to N uptake dict for rotation
+                Dictionary<DateTime, double> cropsNUptake = Functions.dictMaker(cropsOutPuts, "CropUptakeN");
                 foreach (KeyValuePair<DateTime, double> d in cropsNUptake)
                 {
                     NUptake[d.Key] = cropsNUptake[d.Key];
                 }
+
+                //write final crop variables to field config dict
+                RotationCropValues[p + "ResRoot"] = Functions.GetFinal(cropsOutPuts, "RootN");
+                RotationCropValues[p + "RsStover"] = Functions.GetFinal(cropsOutPuts, "StoverN");
+                RotationCropValues[p + "ResFieldLoss"] = Functions.GetFinal(cropsOutPuts, "FieldLossN");
+                RotationCropValues[p + "EstablishDate"] = dCropConfig["EstablishDate"];
+                RotationCropValues[p + "HarvestDate"] = dCropConfig["HarvestDate"];
             }
 
-            // Pack Daily State Variables into a 2D array so they can be output
-            object[,] soilNarry = new object[simDates.Length+1, 3];
+            // Calculate residue mineralisation
+            Dictionary<DateTime, double> NResudues = ResidueMineralisationModel.CalculateOutputs(simDates, tt, config, RotationCropValues);
+
+            //Initialise SoilN array
+            Dictionary<DateTime, double> soilN = MineralN.CalculateOutputs(simDates, (double)config["InitialN"], NUptake, NResudues);
             
+
+            // Pack Daily State Variables into a 2D array so they can be output
+            object[,] soilNarry = new object[simDates.Length + 1, 4];
+
             soilNarry[0, 0] = "Date"; Functions.packRows(0, simDates, ref soilNarry);
             soilNarry[0, 1] = "SoilMineralN"; Functions.packRows(1, soilN, ref soilNarry);
             soilNarry[0, 2] = "UptakeN"; Functions.packRows(2, NUptake, ref soilNarry);
+            soilNarry[0, 3] = "ResidueN"; Functions.packRows(3, NResudues, ref soilNarry);
 
             return soilNarry;
         }

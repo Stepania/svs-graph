@@ -64,7 +64,7 @@ namespace Helper
                 }
             }
 
-            return (object[,])CropModel.CalculateCropOutputs(AccumulateTtt(Tt), dCropConfig, sCropConfig, true);
+            return (object[,])CropModel.CalculateOutputs(AccumulateTtt(Tt), dCropConfig, sCropConfig);
         }
     }
 }
