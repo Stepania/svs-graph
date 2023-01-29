@@ -40,7 +40,7 @@ namespace Helper
         }
 
         /// <summary>
-        /// Function to extract a row from a 2D array into a date indexed dictionary
+        /// Function to extract a row from a 2D array into a date indexed dictionary assuming date is in the first column
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
         /// <param name="colName">The header name of the column to extract</param>
@@ -64,6 +64,22 @@ namespace Helper
         }
 
         /// <summary>
+        /// Function to convert a 2D array with a row of date keys and a row of values into a dictionary
+        /// </summary>
+        /// <param name="date">An array of DateTimes</param>
+        /// <param name="values">An array of doubles</param>
+        /// <returns>dictionary converted from arr</returns>
+        public static Dictionary<DateTime, double> dictMaker(DateTime[] date, double[] values)
+        {
+            Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
+            for (int r = 0; r < date.Length; r++)
+            {
+                dict.Add(date[r], values[r]);
+            }
+            return dict;
+        }
+        
+        /// <summary>
         /// Function to extract a row from a 2D array into a date indexed dictionary
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
@@ -83,24 +99,6 @@ namespace Helper
             }
             return ret;
         }
-
-
-        /// <summary>
-        /// Function to convert a 2D array with a row of date keys and a row of values into a dictionary
-        /// </summary>
-        /// <param name="date">An array of DateTimes</param>
-        /// <param name="values">An array of doubles</param>
-        /// <returns>dictionary converted from arr</returns>
-        public static Dictionary<DateTime, double> dictMaker(DateTime[] date, double[] values)
-        {
-            Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
-            for (int r = 0; r < date.Length; r++)
-            {
-                dict.Add(date[r], values[r]);
-            }
-            return dict;
-        }
-        
         /// <summary>
         /// Function that packs an array of variables into a specified column in a 2D array
         /// </summary>
@@ -153,11 +151,11 @@ namespace Helper
         /// <param name="final">The Daily State Variable value on the last day of the simulation</param>
         /// <param name="correction">A factor to apply Stage of harvest correction</param>
         /// <returns>An array of Daily State Variables for the model</returns>
-        public static double[] scaledValues(double[] scaller, double final, double correction)
+        public static Dictionary<DateTime, double> scaledValues(Dictionary<DateTime, double> scaller, double final, double correction)
         {
-            double[] sv = new double[scaller.Length];
-            for (int d = 0; d < sv.Length; d++)
-                sv[d] = scaller[d] * final * correction;
+            Dictionary<DateTime, double> sv = new Dictionary<DateTime, double>();
+            foreach (DateTime d in scaller.Keys)
+                sv.Add(d, scaller[d] * final * correction);
             return sv;
         }
 
@@ -170,11 +168,33 @@ namespace Helper
         public static DateTime[] SimDates(object start, object end)
         {
             DateTime sDate = DateTime.FromOADate((double)start);
-            DateTime eDate = DateTime.FromOADate((double)end);
+            DateTime eDate = DateTime.FromOADate((double)end+1);
             List<DateTime> ret = new List<DateTime>();
             for (DateTime d = sDate; d < eDate; d = d.AddDays(1))
                 ret.Add(d);
             return ret.ToArray();
+        }
+
+        /// <summary>
+        /// Returns an accumulation of Thermal time over the duration of the dialy input values
+        /// </summary>
+        /// <param name="Tt">array of daily average temperatures</param>
+        /// <returns>Array of accumulated thermal time</returns>
+        public static Dictionary<DateTime, double> AccumulateTt(DateTime[] dates, Dictionary<DateTime,double> Tt)
+        {
+            Dictionary<DateTime, double> tt = new Dictionary<DateTime, double>();
+            foreach (DateTime d in dates)
+            {
+                try
+                {
+                    tt.Add(d, tt[d.AddDays(-1)] + Tt[d]);
+                }
+                catch // if today is the first day the above will throw
+                {
+                    tt.Add(d, Tt[d]);
+                }
+            }
+            return tt;
         }
     }
 }

@@ -16,7 +16,7 @@ namespace SVSModel
         /// <param name="sConfig">A dictionary containing configuration information such as crop type and harvest stage</param>
         /// <param name="Params"></param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object[,] CalculateOutputs(double[] Tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig)
+        public static object[,] CalculateOutputs(Dictionary<DateTime, double> tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig)
         {
             DateTime[] cropDates = Functions.SimDates(dConfig["EstablishDate"],dConfig["HarvestDate"]);
             int durat = cropDates.Length;
@@ -31,7 +31,7 @@ namespace SVSModel
             }
 
             // Derive Crop Parameters
-            double Tt_Harv = Tt.Last();
+            double Tt_Harv = tt.Values.Last();
             double Tt_estab = Tt_Harv * (Constants.PropnTt[sConfig["EstablishStage"].ToString()] / Constants.PropnTt[sConfig["HarvestStage"].ToString()]);
             double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[sConfig["HarvestStage"].ToString()]);
             double b_Biomass = Xo_Biomass * .25;
@@ -68,34 +68,35 @@ namespace SVSModel
             double fRootN = fRootDwt * Params["Root [N]"] / 100;
             double fCropN = fRootN + fStoverN + fFieldLossN + fDressingLossN + fSaleableProductN;
 
-                        
+
             //Daily time-step, calculate Daily Scallers to give in crop patterns
-            double[] biomassScaller = new double[durat];
-            double[] coverScaller = new double[durat];
-            double[] rootDepthScaller = new double[durat];
-            for (int d = 0; d < durat; d++)
+            Dictionary<DateTime, double> biomassScaller = new Dictionary<DateTime, double>();
+            Dictionary<DateTime, double> coverScaller = new Dictionary<DateTime, double>();
+            Dictionary<DateTime, double> rootDepthScaller = new Dictionary<DateTime, double>();
+            foreach (DateTime d in tt.Keys)
             {
-                biomassScaller[d] = (1 / (1 + Math.Exp(-((Tt[d] - Xo_Biomass) / (b_Biomass)))));
-                if (Tt[d] < T_maxRD)
-                    rootDepthScaller[d] = Tt[d] / T_maxRD;
-                else
-                    rootDepthScaller[d] = 1;
-                if (Tt[d] < T_sen)
-                    coverScaller[d] = 1 / (1 + Math.Exp(-((Tt[d] - Xo_cov) / b_cov)));
-                else
-                    coverScaller[d] = Math.Max(0, (1 - (Tt[d] - T_sen) / (T_mat - T_sen)));
+                double bmScaller = (1 / (1 + Math.Exp(-((tt[d] - Xo_Biomass) / (b_Biomass)))));
+                biomassScaller.Add(d, bmScaller);
+                double rdScaller = 1;
+                if (tt[d] < T_maxRD)
+                    rdScaller = tt[d] / T_maxRD;
+                rootDepthScaller.Add(d, rdScaller);
+                double cScaller = Math.Max(0, (1 - (tt[d] - T_sen) / (T_mat - T_sen)));
+                if (tt[d] < T_sen)
+                    cScaller = 1 / (1 + Math.Exp(-((tt[d] - Xo_cov) / b_cov)));
+                coverScaller.Add(d, cScaller);
             }
 
             // Multiply Harvest State Variables by Daily Scallers to give Daily State Variables
-            double[] RootN = Functions.scaledValues(biomassScaller, fRootN, stageCorrection);
-            double[] StoverN = Functions.scaledValues(biomassScaller, fStoverN, stageCorrection);
-            double[] SaleableProductN = Functions.scaledValues(biomassScaller, fSaleableProductN, stageCorrection);
-            double[] FieldLossN = Functions.scaledValues(biomassScaller, fFieldLossN, stageCorrection);
-            double[] DressingLossN = Functions.scaledValues(biomassScaller, fDressingLossN, stageCorrection);
-            double[] TotalCropN = Functions.scaledValues(biomassScaller, fCropN, stageCorrection);
-            double[] CropUptakeN = Functions.calcDelta(TotalCropN);
-            double[] Cover = Functions.scaledValues(coverScaller, (double)Params["A cover"], 1.0);
-            double[] RootDepth = Functions.scaledValues(rootDepthScaller, (double)Params["Max RD"], 1.0);
+            Dictionary<DateTime, double> RootN = Functions.scaledValues(biomassScaller, fRootN, stageCorrection);
+            Dictionary<DateTime, double> StoverN = Functions.scaledValues(biomassScaller, fStoverN, stageCorrection);
+            Dictionary<DateTime, double> SaleableProductN = Functions.scaledValues(biomassScaller, fSaleableProductN, stageCorrection);
+            Dictionary<DateTime, double> FieldLossN = Functions.scaledValues(biomassScaller, fFieldLossN, stageCorrection);
+            Dictionary<DateTime, double> DressingLossN = Functions.scaledValues(biomassScaller, fDressingLossN, stageCorrection);
+            Dictionary<DateTime, double> TotalCropN = Functions.scaledValues(biomassScaller, fCropN, stageCorrection);
+            Dictionary<DateTime, double> CropUptakeN = Functions.dictMaker(cropDates,Functions.calcDelta(TotalCropN.Values.ToArray()));
+            Dictionary<DateTime, double> Cover = Functions.scaledValues(coverScaller, (double)Params["A cover"], 1.0);
+            Dictionary<DateTime, double> RootDepth = Functions.scaledValues(rootDepthScaller, (double)Params["Max RD"], 1.0);
 
             // Pack Daily State Variables into a 2D array so they can be output
             object[,] ret = new object[durat + 1, 10];

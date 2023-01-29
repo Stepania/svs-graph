@@ -12,6 +12,20 @@ namespace SVSModel
     /// </summary>
     class SOMMineralisationModel
     {
+        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Dictionary<string, object> config)
+        {
+            int durat = simDates.Length;
+            double hweon = Double.Parse(config["HWEON"].ToString());
+            double swf = 1.0;
+            double mrc = 0.005;
 
+            Dictionary<DateTime, double> NSoilOM = Functions.dictMaker(simDates,new double[durat]);
+            foreach (DateTime d in simDates)
+            {
+                double somMin = hweon* Tt[d] *swf * mrc;
+                NSoilOM[d] = somMin;
+            }
+            return NSoilOM;
+        }
     }
 }
