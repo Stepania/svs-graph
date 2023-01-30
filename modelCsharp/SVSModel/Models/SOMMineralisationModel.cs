@@ -12,10 +12,10 @@ namespace SVSModel
     /// </summary>
     class SOMMineralisationModel
     {
-        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Dictionary<string, object> config)
+        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Config config)
         {
             int durat = simDates.Length;
-            double hweon = Double.Parse(config["HWEON"].ToString());
+            double hweon = config.field.HWEON;
             double swf = 1.0;
             double mrc = 0.005;
 

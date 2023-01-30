@@ -29,31 +29,12 @@ namespace Helper
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
         public static object[,] GetDailyCropData(double[] Tt, object[,] Config)
         {
-            Dictionary<string, object> config = Functions.dictMaker(Config);
-            DateTime[] cropDates = Functions.SimDates(config["EstablishDate"], config["HarvestDate"]);
+            Dictionary<string, object> c = Functions.dictMaker(Config);
+            Crop config = new Crop(c,"Current");
+            DateTime[] cropDates = Functions.SimDates(config.EstablishDate, config.HarvestDate);
             Dictionary<DateTime, double> tt = Functions.dictMaker(cropDates, Tt);
             Dictionary<DateTime, double> AccTt = Functions.AccumulateTt(cropDates, tt);
-            Dictionary<string, object> sCropConfig = Constants.CropConfigStrings; //Set blank crop specific config dict
-            List<string> skeys = new List<string>(sCropConfig.Keys);
-            foreach (string k in skeys)
-            {
-                sCropConfig[k] = config[k]; // get crop position specific values from config for each value
-            }
-            Dictionary<string, double> dCropConfig = Constants.CropConfigDoubles; //Set blank crop specific config dict
-            List<string> dkeys = new List<string>(dCropConfig.Keys);
-            foreach (string k in dkeys)
-            {
-                if (k != "Units") //
-                {
-                    dCropConfig[k] = double.Parse(config[k].ToString()); // get crop position specific values from config for each value
-                }
-                else
-                {
-                    dCropConfig[k] = Constants.UnitConversions[config[k].ToString()];
-                }
-            }
-
-            return (object[,])CropModel.CalculateOutputs(AccTt, dCropConfig, sCropConfig);
+            return (object[,])CropModel.CalculateOutputs(AccTt, config);
         }
     }
 }

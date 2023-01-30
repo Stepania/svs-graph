@@ -16,24 +16,24 @@ namespace SVSModel
         /// <param name="sConfig">A dictionary containing configuration information such as crop type and harvest stage</param>
         /// <param name="Params"></param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object[,] CalculateOutputs(Dictionary<DateTime, double> tt, Dictionary<string, double> dConfig, Dictionary<string,object> sConfig)
+        public static object[,] CalculateOutputs(Dictionary<DateTime, double> tt, Crop config)
         {
-            DateTime[] cropDates = Functions.SimDates(dConfig["EstablishDate"],dConfig["HarvestDate"]);
+            DateTime[] cropDates = Functions.SimDates(config.EstablishDate,config.HarvestDate);
             int durat = cropDates.Length;
-            DataFrame data = DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\CropCoefficientTable.csv");
+            DataFrame data = DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
 
             Dictionary<string, double> Params = new Dictionary<string, double>();
 
             int rowCount = (int)data.Rows.Count;
             for (int r = 1;r<rowCount;r++)
             {
-                Params.Add(data["Key"][r].ToString(),Double.Parse(data[(string)sConfig["CropName"]][r].ToString()));
+                Params.Add(data["Key"][r].ToString(),Double.Parse(data[config.CropName][r].ToString()));
             }
 
             // Derive Crop Parameters
             double Tt_Harv = tt.Values.Last();
-            double Tt_estab = Tt_Harv * (Constants.PropnTt[sConfig["EstablishStage"].ToString()] / Constants.PropnTt[sConfig["HarvestStage"].ToString()]);
-            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[sConfig["HarvestStage"].ToString()]);
+            double Tt_estab = Tt_Harv * (Constants.PropnTt[config.EstablishStage] / Constants.PropnTt[config.HarvestStage]);
+            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[config.HarvestStage]);
             double b_Biomass = Xo_Biomass * .25;
             double T_mat = Xo_Biomass * 2.2222;
             double T_maxRD = Constants.PropnTt["EarlyReproductive"] * T_mat;
@@ -42,22 +42,22 @@ namespace SVSModel
             double b_cov = Xo_cov * 0.2;
             double a_harvestIndex = Params["Typical HI"] - Params["HI Range"];
             double b_harvestIndex = Params["HI Range"] / Params["Typical Yield"];
-            double stageCorrection = 1 / Constants.PropnMaxDM[sConfig["HarvestStage"].ToString()];
+            double stageCorrection = 1 / Constants.PropnMaxDM[config.HarvestStage];
 
             // derive crop Harvest State Variables 
-            double fSaleableYieldDwt = Double.Parse(dConfig["SaleableYield"].ToString());
-            double fFieldLossPct = dConfig["FieldLoss"];
-            double fFreshTotalProductWt = fSaleableYieldDwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - dConfig["DressingLoss"] / 100));
+            double fSaleableYieldDwt = config.SaleableYield;
+            double fFieldLossPct = config.FieldLoss;
+            double fFreshTotalProductWt = fSaleableYieldDwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - config.DressingLoss / 100));
                   // Crop Failure.  If yield is very low or field loss is very high assume complete crop failure.  Uptake equation are too sensitive saleable yields close to zero and field losses close to 100
-            if (((dConfig["SaleableYield"] * dConfig["Units"]) < (Params["Typical Yield"] * 0.05)) || (dConfig["FieldLoss"] > 95))
+            if (((config.SaleableYield * config.ToKGperHA) < (Params["Typical Yield"] * 0.05)) || (config.FieldLoss > 95))
             {
                 fFieldLossPct = 100;
                 fFreshTotalProductWt = Params["Typical Yield"] * (1 / (1 - Params["Typical Dressing Loss %"] / 100));
             }
-            double fTotalProductDwt = fFreshTotalProductWt * dConfig["Units"] * (1 - dConfig["MoistureContent"] / 100);
+            double fTotalProductDwt = fFreshTotalProductWt * config.ToKGperHA * (1 - config.MoistureContent / 100);
             double fFieldLossDwt = fTotalProductDwt * fFieldLossPct / 100;
             double fFieldLossN = fFieldLossDwt * Params["Product [N]"] / 100;
-            double fDressingLossDwt = fTotalProductDwt * dConfig["DressingLoss"] / 100;
+            double fDressingLossDwt = fTotalProductDwt * config.DressingLoss / 100;
             double fDressingLossN = fDressingLossDwt * Params["Product [N]"] / 100;
             double fSaleableProductDwt = fTotalProductDwt - fFieldLossDwt - fDressingLossDwt;
             double fSaleableProductN = fSaleableProductDwt * Params["Product [N]"] / 100;

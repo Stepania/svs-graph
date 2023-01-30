@@ -12,7 +12,7 @@ namespace SVSModel
     /// </summary>
     class ResidueMineralisationModel
     {
-        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Dictionary<string, object> config, Dictionary<string, double> cropProduction)
+        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Config config)
         {
             int durat = simDates.Length;
             Dictionary<DateTime, double> NResidues = Functions.dictMaker(simDates, new double[simDates.Length]);
@@ -36,17 +36,17 @@ namespace SVSModel
                     NResidues[d] += mineralisation;
                 }
                 //Add residues to system at harvest
-                if (d == DateTime.FromOADate((double)config["PriorHarvestDate"]))
+                if (d == config.Prior.HarvestDate)
                 {
-                    PresRoot[d] = cropProduction["PriorResRoot"];
-                    PresStover[d] = cropProduction["PriorResStover"];
-                    PresFieldLoss[d] = cropProduction["PriorResFieldLoss"];
+                    PresRoot[d] = config.Prior.ResRoot;
+                    PresStover[d] = config.Prior.ResStover;
+                    PresFieldLoss[d] = config.Prior.FieldLoss;
                 }
-                if (d == DateTime.FromOADate((double)config["CurrentHarvestDate"]))
+                if (d == config.Current.HarvestDate)
                 {
-                    PresRoot[d] = cropProduction["CurrentResRoot"];
-                    PresStover[d] = cropProduction["CurrentResStover"];
-                    PresFieldLoss[d] = cropProduction["CurrentResFieldLoss"];
+                    PresRoot[d] = config.Current.ResRoot;
+                    PresStover[d] = config.Current.ResStover;
+                    PresFieldLoss[d] = config.Current.ResFieldLoss;
                 }
             }
             return NResidues;
