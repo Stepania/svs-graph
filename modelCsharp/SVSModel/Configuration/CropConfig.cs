@@ -19,6 +19,7 @@ namespace Helper
         public double ResRoot { get; set; }
         public double ResStover { get; set; }
         public double ResFieldLoss { get; set; }
+        public double NUptake { get; set; }
         public Crop(Dictionary<string, object> c, string pos)
         {
             CropName = c[pos + "CropName"].ToString();

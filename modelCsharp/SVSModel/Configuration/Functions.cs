@@ -78,7 +78,7 @@ namespace Helper
             }
             return dict;
         }
-        
+
         /// <summary>
         /// Function to extract a row from a 2D array into a date indexed dictionary
         /// </summary>
