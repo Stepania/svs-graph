@@ -15,9 +15,13 @@ namespace Helper
         /// <param name="Tt">Array of daily thermal time over the duration of the rotation</param>
         /// <param name="config">2D aray with parameter names and values for crop field configuration parameters</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
-        public static object[,] GetDailyNBalance(double[] tt, object[,] config, object[,] testResults)
+        public static object[,] GetDailyNBalance(object[,] tt, object[,] config, object[,] testResults)
         {
-            return NBalance.CalculateSoilNBalance(tt, config, testResults);
+
+            Dictionary<DateTime, double> _tt = Functions.dictMaker(tt, "MeanT");
+            Config _config = new Config(config);
+            Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
+            return NBalance.CalculateSoilNBalance(_tt, _config, _testResults);
         }
 
 
@@ -34,7 +38,7 @@ namespace Helper
             DateTime[] cropDates = Functions.SimDates(config.EstablishDate, config.HarvestDate);
             Dictionary<DateTime, double> tt = Functions.dictMaker(cropDates, Tt);
             Dictionary<DateTime, double> AccTt = Functions.AccumulateTt(cropDates, tt);
-            return (object[,])CropModel.CalculateOutputs(AccTt, config);
+            return CropModel.CalculateOutputs(AccTt, config);
         }
     }
 }

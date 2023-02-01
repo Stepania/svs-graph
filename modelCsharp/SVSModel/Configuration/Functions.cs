@@ -56,7 +56,8 @@ namespace Helper
                 {
                     for (int r = 1; r < Nrows; r++)
                     {
-                        dict.Add((DateTime)arr[r, 0], Double.Parse(arr[r, c].ToString()));
+                        try { dict.Add(Date(arr[r, 0]), Num(arr[r, c])); }
+                        catch { }
                     }
                 }
             }
@@ -168,7 +169,7 @@ namespace Helper
         public static DateTime[] SimDates(DateTime start, DateTime end)
         {
            List<DateTime> ret = new List<DateTime>();
-            for (DateTime d = start; d < end; d = d.AddDays(1))
+            for (DateTime d = start; d <= end; d = d.AddDays(1))
                 ret.Add(d);
             return ret.ToArray();
         }
@@ -196,7 +197,8 @@ namespace Helper
         }
         public static DateTime Date(object configDate)
         {
-            return DateTime.FromOADate((double)configDate);
+            try { return DateTime.FromOADate((double)configDate); }
+            catch { return (DateTime)configDate; }
         }
         public static double Num(object configDouble)
         {

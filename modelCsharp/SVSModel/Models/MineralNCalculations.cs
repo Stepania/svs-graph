@@ -29,7 +29,7 @@ namespace SVSModel
         {
             foreach (DateTime d in testResults.Keys)
             {
-                double correction = soilN[d] - testResults[d];
+                double correction = testResults[d] - soilN[d];
                 DateTime[] simDatesToCorrect = Functions.SimDates(d, soilN.Keys.Last());
                 foreach (DateTime c in simDatesToCorrect)
                 {
@@ -43,16 +43,17 @@ namespace SVSModel
                                                                              Dictionary<DateTime, double> somN, Dictionary<DateTime, double> cropN,
                                                                              Dictionary<DateTime, double> testResults, Config config)
         {
-            
             Dictionary<DateTime, double> fert = Functions.dictMaker(soilN.Keys.ToArray(), new double[soilN.Keys.Count()]);
             DateTime[] cropDates = Functions.SimDates(config.Current.EstablishDate, config.Current.HarvestDate);
             DateTime startSchedulleDate = config.Current.EstablishDate;
             if (testResults.Keys.Count() < 0)
                 startSchedulleDate = testResults.Keys.Last();
             DateTime[] schedullingDates = Functions.SimDates(startSchedulleDate, config.Current.HarvestDate);
+            
             //Apply Planting N
             fert[config.Current.EstablishDate] = config.field.EstablishFertN;
             AddFertiliser(ref soilN, config.field.EstablishFertN, config.Current.EstablishDate, config);
+            
             //Calculate further N requirements
             double mineralisation = 0;
             foreach (DateTime d in cropDates)
@@ -60,7 +61,7 @@ namespace SVSModel
                 mineralisation += residueMin[d];
                 mineralisation += somN[d];
             }
-            double CropN = cropN[startSchedulleDate] - cropN[config.Current.HarvestDate];
+            double CropN =  cropN[config.Current.HarvestDate] - cropN[startSchedulleDate];
             double trigger = config.field.Trigger;
             double NFertReq = (CropN + trigger) - soilN[config.Current.EstablishDate] - mineralisation;
             double efficiency = config.field.Efficiency;
@@ -76,7 +77,7 @@ namespace SVSModel
                     if ((soilN[d] < trigger) && (FertApplied < NFertReq))
                     {
                         AddFertiliser(ref soilN, NAppn * efficiency, d, config);
-                        fert[d] = NAppn;
+                        fert[d] += NAppn;
                         FertApplied += NAppn;
                     }
                 }
