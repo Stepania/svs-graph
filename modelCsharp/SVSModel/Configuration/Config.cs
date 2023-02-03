@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Helper
 {
+    /// <summary>
+    /// Class that stores all the configuration information for the simulation
+    /// </summary>
     public class Config
     {
         public Crop Prior = null;

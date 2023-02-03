@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Helper
 {
+    /// <summary>
+    /// Class that stores the configuration information for a specific crop in the correct type.  
+    /// I.e constructor takes all config settings as objects and converts them to appropriates types
+    /// </summary>
     public class Crop
     {
         public string CropName { get; private set; }

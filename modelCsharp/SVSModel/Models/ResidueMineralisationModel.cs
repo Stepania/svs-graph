@@ -7,12 +7,16 @@ using System.Threading.Tasks;
 
 namespace SVSModel
 {
-    /// <summary>
-    /// Model to predict mineralisation for previous crop residues
-    /// </summary>
     class ResidueMineralisationModel
     {
-        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> Tt, Config config)
+        /// <summary>
+        /// Calculates the daily nitrogen mineralised as a result of residue decomposition
+        /// </summary>
+        /// <param name="simDates">series of dates over the duration of the simulation</param>
+        /// <param name="meanT">A date indexed dictionary of daily mean temperatures</param>
+        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
+        /// <returns>Date indexed series of daily N mineralised from residues</returns>
+        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> meanT, Config config)
         {
             int durat = simDates.Length;
             Dictionary<DateTime, double> NResidues = Functions.dictMaker(simDates, new double[simDates.Length]);
@@ -29,9 +33,15 @@ namespace SVSModel
                 //Decompose residues each day
                 foreach (Dictionary<DateTime, double> res in Residues)
                 {
-                    try { res[d] = res[d.AddDays(-1)]; }
-                    catch { res[d] = 0.2; }
-                    double mineralisation = res[d] * 0.001 * Tt[d];
+                    if (d == simDates[0])
+                    {
+                        res[d] = 0.2;
+                    }
+                    else
+                    {
+                        res[d] = res[d.AddDays(-1)];
+                    }
+                    double mineralisation = res[d] * 0.001 * meanT[d];
                     res[d] -= mineralisation;
                     NResidues[d] += mineralisation;
                 }

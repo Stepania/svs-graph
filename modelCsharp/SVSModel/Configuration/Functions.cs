@@ -40,7 +40,7 @@ namespace Helper
         }
 
         /// <summary>
-        /// Function to extract a row from a 2D array into a date indexed dictionary assuming date is in the first column
+        /// Function to extract a row from a 2D array into a date indexed dictionary assuming date is in the first column in the array is dates
         /// </summary>
         /// <param name="arr">2D arry to be converted</param>
         /// <param name="colName">The header name of the column to extract</param>
@@ -50,14 +50,18 @@ namespace Helper
             Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
             int Nrows = arr.GetLength(0);
             int Ncols = arr.GetLength(1);
-            for (int c =0; c<Ncols;c++)
+            for (int c = 0; c < Ncols; c++)
             {
-                if (arr[0,c].ToString() == colName)
+                if (arr[0, c].ToString() == colName)
                 {
                     for (int r = 1; r < Nrows; r++)
                     {
-                        try { dict.Add(Date(arr[r, 0]), Num(arr[r, c])); }
-                        catch { }
+                        if (arr[r, 0].GetType() == typeof(ExcelDna.Integration.ExcelEmpty))
+                        { }
+                        else
+                        {
+                            dict.Add(Date(arr[r, 0]), Num(arr[r, c]));
+                        }
                     }
                 }
             }
@@ -99,19 +103,6 @@ namespace Helper
                 }
             }
             return ret;
-        }
-        /// <summary>
-        /// Function that packs an array of variables into a specified column in a 2D array
-        /// </summary>
-        /// <param name="colInd">Name of the column to be packed</param>
-        /// <param name="column">index position of the column</param>
-        /// <param name="df">the 2D array that the column is to be packed into</param>
-        public static void packRows(int colInd, double[] column, ref object[,] df)
-        {
-            for (int currentRow = 0; currentRow < column.Length; currentRow++)
-            {
-                df[currentRow + 1, colInd] = column[currentRow];
-            }
         }
 
         /// <summary>
@@ -166,9 +157,9 @@ namespace Helper
         /// <param name="start">Date to start series</param>
         /// <param name="end">Date to end series</param>
         /// <returns>a continious array of dates between the start and end specified</returns>
-        public static DateTime[] SimDates(DateTime start, DateTime end)
+        public static DateTime[] DateSeries(DateTime start, DateTime end)
         {
-           List<DateTime> ret = new List<DateTime>();
+            List<DateTime> ret = new List<DateTime>();
             for (DateTime d = start; d <= end; d = d.AddDays(1))
                 ret.Add(d);
             return ret.ToArray();
@@ -179,26 +170,33 @@ namespace Helper
         /// </summary>
         /// <param name="Tt">array of daily average temperatures</param>
         /// <returns>Array of accumulated thermal time</returns>
-        public static Dictionary<DateTime, double> AccumulateTt(DateTime[] dates, Dictionary<DateTime,double> Tt)
+        public static Dictionary<DateTime, double> AccumulateTt(DateTime[] dates, Dictionary<DateTime, double> Tt)
         {
             Dictionary<DateTime, double> tt = new Dictionary<DateTime, double>();
             foreach (DateTime d in dates)
             {
-                try
-                {
-                    tt.Add(d, tt[d.AddDays(-1)] + Tt[d]);
-                }
-                catch // if today is the first day the above will throw
+                if (d == dates[0]) // if today is the first day the above will throw
                 {
                     tt.Add(d, Tt[d]);
+                }
+                else
+                {
+                    tt.Add(d, tt[d.AddDays(-1)] + Tt[d]);
                 }
             }
             return tt;
         }
+
         public static DateTime Date(object configDate)
         {
-            try { return DateTime.FromOADate((double)configDate); }
-            catch { return (DateTime)configDate; }
+            if (configDate.GetType() == typeof(double))
+            {
+                return DateTime.FromOADate((double)configDate);
+            }
+            else
+            {
+                return (DateTime)configDate;
+            }
         }
         public static double Num(object configDouble)
         {

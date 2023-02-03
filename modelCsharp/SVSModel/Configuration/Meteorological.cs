@@ -11,7 +11,7 @@ namespace Helper
     class Meterological
     {
         /// <summary>
-        /// Calculate median thermaltime for location
+        /// Not currently used in model, meanT data is passed in and is not doing water balance yet so not needed.
         /// </summary>
         /// <param name="Start"></param>
         /// <param name="End"></param>

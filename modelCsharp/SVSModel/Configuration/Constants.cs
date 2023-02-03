@@ -13,26 +13,6 @@ namespace Helper
         public static Dictionary<string, double> PropnTt = new Dictionary<string, double>() { { "Seed", 0 },{ "Seedling", 0.16 },{ "Vegetative", 0.5},{ "EarlyReproductive",0.61},
             { "MidReproductive",0.69},{  "LateReproductive",0.8},{"Maturity",1.0},{"Late",1.27} };
 
-        /// <summary>blank Dictionary containing keys for field configuration doubles</summary>
-        public static Dictionary<string, double> RotationCropValues = new Dictionary<string, double>() {
-            {"PriorResRoot",new double()},{"PriorResStover",new double()},{"PriorResFieldLoss",new double()},{"PriorEstablishDate",new double()},{"PriorHarvestDate",new double()},
-            {"CurrentResRoot",new double()},{"CurrentResStover",new double()},{"CurrentResFieldLoss",new double()},{"CurrentEstablishDate",new double()},{"CurrentHarvestDate",new double()},
-            {"FollowingResRoot",new double()},{"FollowingResStover",new double()},{"FollowingResFieldLoss",new double()},{"FollowingEstablishDate",new double()},{"FollowingHarvestDate",new double()}};
-
-        /// <summary>blank Dictionary containing keys for specific crop configuration doubles</summary>
-        public static Dictionary<string, double> CropConfigDoubles = new Dictionary<string, double>() {{"SaleableYield",new double()},{"Units",new double()},
-            {"FieldLoss",new double()},{"DressingLoss",new double()},{"MoistureContent",new double()},{ "EstablishDate",new double()},{"HarvestDate",new double()}};
-
-        /// <summary>blank Dictionary containing keys for specific crop configuration settings</summary>
-        public static Dictionary<string, object> CropConfigStrings = new Dictionary<string, object>() {{ "CropName",new object()},
-            {"EstablishStage",new object()},{"HarvestStage",new object()},{"ResidueTreatment",new object()}};
-        public static System.Collections.IEnumerable cropPositions()
-        {
-            yield return "Prior";
-            yield return "Current";
-            yield return "Following";
-        }
-
         /// <summary>Dictionary containing conversion from specified units to kg/ha which are the units that the model works in </summary>
         public static Dictionary<string, double> UnitConversions = new Dictionary<string, double>() { { "t/ha", 1000 }, { "kg/ha", 1.0 } };
     }

@@ -12,22 +12,18 @@ namespace SVSModel
         /// <summary>
         /// Returns daily N uptake over the duration of the Tt input data for Root, Stover, Product and loss N as well as cover and root depth
         /// </summary>
-        /// <param name="Tt">An array containing the accumulated thermal time for the duration of the crop</param>
-        /// <param name="sConfig">A dictionary containing configuration information such as crop type and harvest stage</param>
-        /// <param name="Params"></param>
+        /// <param name="tt">An array containing the accumulated thermal time for the duration of the crop</param>
+        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>A 2D array of crop model outputs</returns>
         public static object[,] CalculateOutputs(Dictionary<DateTime, double> tt, Crop config)
         {
-            DateTime[] cropDates = Functions.SimDates(config.EstablishDate,config.HarvestDate);
-            int durat = cropDates.Length;
-            DataFrame data = DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
-
-            Dictionary<string, double> Params = new Dictionary<string, double>();
-
-            int rowCount = (int)data.Rows.Count;
-            for (int r = 1;r<rowCount;r++)
+            ///Set up data structures
+            DateTime[] cropDates = Functions.DateSeries(config.EstablishDate,config.HarvestDate);
+            DataFrame allCropCoeffs = DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
+            Dictionary<string, double> cropCoeffs = new Dictionary<string, double>();
+            for (int r = 1; r < (int)allCropCoeffs.Rows.Count; r++)
             {
-                Params.Add(data["Key"][r].ToString(),Double.Parse(data[config.CropName][r].ToString()));
+                cropCoeffs.Add(allCropCoeffs["Key"][r].ToString(), Double.Parse(allCropCoeffs[config.CropName][r].ToString()));
             }
 
             // Derive Crop Parameters
@@ -38,10 +34,10 @@ namespace SVSModel
             double T_mat = Xo_Biomass * 2.2222;
             double T_maxRD = Constants.PropnTt["EarlyReproductive"] * T_mat;
             double T_sen = Constants.PropnTt["MidReproductive"] * T_mat;
-            double Xo_cov = Xo_Biomass * 0.4 / Params["rCover"];
+            double Xo_cov = Xo_Biomass * 0.4 / cropCoeffs["rCover"];
             double b_cov = Xo_cov * 0.2;
-            double a_harvestIndex = Params["Typical HI"] - Params["HI Range"];
-            double b_harvestIndex = Params["HI Range"] / Params["Typical Yield"];
+            double a_harvestIndex = cropCoeffs["Typical HI"] - cropCoeffs["HI Range"];
+            double b_harvestIndex = cropCoeffs["HI Range"] / cropCoeffs["Typical Yield"];
             double stageCorrection = 1 / Constants.PropnMaxDM[config.HarvestStage];
 
             // derive crop Harvest State Variables 
@@ -49,27 +45,27 @@ namespace SVSModel
             double fFieldLossPct = config.FieldLoss;
             double fFreshTotalProductWt = fSaleableYieldDwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - config.DressingLoss / 100));
                   // Crop Failure.  If yield is very low or field loss is very high assume complete crop failure.  Uptake equation are too sensitive saleable yields close to zero and field losses close to 100
-            if (((config.SaleableYield * config.ToKGperHA) < (Params["Typical Yield"] * 0.05)) || (config.FieldLoss > 95))
+            if (((config.SaleableYield * config.ToKGperHA) < (cropCoeffs["Typical Yield"] * 0.05)) || (config.FieldLoss > 95))
             {
                 fFieldLossPct = 100;
-                fFreshTotalProductWt = Params["Typical Yield"] * (1 / (1 - Params["Typical Dressing Loss %"] / 100));
+                fFreshTotalProductWt = cropCoeffs["Typical Yield"] * (1 / (1 - cropCoeffs["Typical Dressing Loss %"] / 100));
             }
             double fTotalProductDwt = fFreshTotalProductWt * config.ToKGperHA * (1 - config.MoistureContent / 100);
             double fFieldLossDwt = fTotalProductDwt * fFieldLossPct / 100;
-            double fFieldLossN = fFieldLossDwt * Params["Product [N]"] / 100;
+            double fFieldLossN = fFieldLossDwt * cropCoeffs["Product [N]"] / 100;
             double fDressingLossDwt = fTotalProductDwt * config.DressingLoss / 100;
-            double fDressingLossN = fDressingLossDwt * Params["Product [N]"] / 100;
+            double fDressingLossN = fDressingLossDwt * cropCoeffs["Product [N]"] / 100;
             double fSaleableProductDwt = fTotalProductDwt - fFieldLossDwt - fDressingLossDwt;
-            double fSaleableProductN = fSaleableProductDwt * Params["Product [N]"] / 100;
+            double fSaleableProductN = fSaleableProductDwt * cropCoeffs["Product [N]"] / 100;
             double HI = a_harvestIndex + fFreshTotalProductWt * b_harvestIndex;
             double fStoverDwt = fTotalProductDwt * 1 / HI - fTotalProductDwt;
-            double fStoverN = fStoverDwt * Params["Stover [N]"] / 100;
-            double fRootDwt = (fStoverDwt + fTotalProductDwt) * Params["P Root"];
-            double fRootN = fRootDwt * Params["Root [N]"] / 100;
+            double fStoverN = fStoverDwt * cropCoeffs["Stover [N]"] / 100;
+            double fRootDwt = (fStoverDwt + fTotalProductDwt) * cropCoeffs["P Root"];
+            double fRootN = fRootDwt * cropCoeffs["Root [N]"] / 100;
             double fCropN = fRootN + fStoverN + fFieldLossN + fDressingLossN + fSaleableProductN;
 
 
-            //Daily time-step, calculate Daily Scallers to give in crop patterns
+            //Daily time-step, calculate Daily Scallers to give in-crop patterns
             Dictionary<DateTime, double> biomassScaller = new Dictionary<DateTime, double>();
             Dictionary<DateTime, double> coverScaller = new Dictionary<DateTime, double>();
             Dictionary<DateTime, double> rootDepthScaller = new Dictionary<DateTime, double>();
@@ -95,11 +91,11 @@ namespace SVSModel
             Dictionary<DateTime, double> DressingLossN = Functions.scaledValues(biomassScaller, fDressingLossN, stageCorrection);
             Dictionary<DateTime, double> TotalCropN = Functions.scaledValues(biomassScaller, fCropN, stageCorrection);
             Dictionary<DateTime, double> CropUptakeN = Functions.dictMaker(cropDates,Functions.calcDelta(TotalCropN.Values.ToArray()));
-            Dictionary<DateTime, double> Cover = Functions.scaledValues(coverScaller, (double)Params["A cover"], 1.0);
-            Dictionary<DateTime, double> RootDepth = Functions.scaledValues(rootDepthScaller, (double)Params["Max RD"], 1.0);
+            Dictionary<DateTime, double> Cover = Functions.scaledValues(coverScaller, (double)cropCoeffs["A cover"], 1.0);
+            Dictionary<DateTime, double> RootDepth = Functions.scaledValues(rootDepthScaller, (double)cropCoeffs["Max RD"], 1.0);
 
             // Pack Daily State Variables into a 2D array so they can be output
-            object[,] ret = new object[durat + 1, 10];
+            object[,] ret = new object[cropDates.Length + 1, 10];
             ret[0, 0] = "Date"; Functions.packRows(0, cropDates, ref ret);
             ret[0, 1] = "RootN"; Functions.packRows(1, RootN, ref ret);
             ret[0, 2] = "StoverN"; Functions.packRows(2, StoverN, ref ret);
