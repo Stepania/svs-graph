@@ -19,7 +19,6 @@ namespace Helper
         {
             InitialN = Functions.Num(c["InitialN"]);
             HWEON = Functions.Num(c["HWEON"]);
-            EstablishFertN = Functions.Num(c["EstablishN"]);
             Trigger = Functions.Num(c["Trigger"]);
             Efficiency = Functions.Num(c["Efficiency"])/100;
             Splits = int.Parse(c["Splits"].ToString());

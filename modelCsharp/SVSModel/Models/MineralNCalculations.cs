@@ -69,28 +69,26 @@ namespace SVSModel
         /// <param name="testResults">Date indexed set of test values</param>
         /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns></returns>
-        public static Dictionary<DateTime, double> DetermineFertRequirements(ref Dictionary<DateTime, double> soilN, Dictionary<DateTime, double> residueMin,
+        public static void DetermineFertRequirements(ref Dictionary<DateTime, double> fert,
+                                                                             ref Dictionary<DateTime, double> soilN, Dictionary<DateTime, double> residueMin,
                                                                              Dictionary<DateTime, double> somN, Dictionary<DateTime, double> cropN,
                                                                              Dictionary<DateTime, double> testResults, Config config)
         {
             //Make all the necessary data structures
-            Dictionary<DateTime, double> fert = Functions.dictMaker(soilN.Keys.ToArray(), new double[soilN.Keys.Count()]);
             DateTime[] cropDates = Functions.DateSeries(config.Current.EstablishDate, config.Current.HarvestDate);
             DateTime startSchedulleDate = config.Current.EstablishDate;
             if (testResults.Keys.Count() < 0)
                 startSchedulleDate = testResults.Keys.Last();
             DateTime[] schedullingDates = Functions.DateSeries(startSchedulleDate, config.Current.HarvestDate);
 
-            //Apply Planting N
-            fert[config.Current.EstablishDate] = config.field.EstablishFertN;
-            AddFertiliser(ref soilN, config.field.EstablishFertN, config.Current.EstablishDate, config);
-
             //Calculate total N from mineralisatin over the duration of the crop
             double mineralisation = 0;
+            double fertToDate = 0;
             foreach (DateTime d in cropDates)
             {
                 mineralisation += residueMin[d];
                 mineralisation += somN[d];
+                fertToDate += fert[d];
             }
 
             // Set other variables needed to derive fertiliser requirement
@@ -99,8 +97,8 @@ namespace SVSModel
             double efficiency = config.field.Efficiency;
 
             // Calculate total fertiliser requirement and ammount to be applied at each application
-            double NFertReq = (CropN + trigger) - soilN[config.Current.EstablishDate] - mineralisation;
-            NFertReq = NFertReq * 1 / efficiency;
+            double NFertReq = (CropN + trigger) - soilN[config.Current.EstablishDate] - mineralisation - fertToDate ;
+            NFertReq = Math.Max(0,NFertReq * 1 / efficiency);
             int splits = config.field.Splits;
             double NAppn = Math.Ceiling(NFertReq / splits);
 
@@ -117,6 +115,15 @@ namespace SVSModel
                         FertApplied += NAppn;
                     }
                 }
+            }
+        }
+
+        public static Dictionary<DateTime, double> ApplyExistingFertiliser(DateTime[] simDates, Dictionary<DateTime, double> nApplied)
+        {
+            Dictionary<DateTime, double> fert = Functions.dictMaker(simDates, new double[simDates.Length]);
+            foreach (DateTime d in nApplied.Keys)
+            {
+                fert[d] = nApplied[d];
             }
             return fert;
         }

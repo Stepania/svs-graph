@@ -14,6 +14,6 @@ namespace Helper
             { "MidReproductive",0.69},{  "LateReproductive",0.8},{"Maturity",1.0},{"Late",1.27} };
 
         /// <summary>Dictionary containing conversion from specified units to kg/ha which are the units that the model works in </summary>
-        public static Dictionary<string, double> UnitConversions = new Dictionary<string, double>() { { "t/ha", 1000 }, { "kg/ha", 1.0 } };
+        public static Dictionary<string, double> UnitConversions = new Dictionary<string, double>() { { "t/ha", 1000 }, { "kg/ha", 1.0 }, { "kg/head", 1.0 } };
     }
 }

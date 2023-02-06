@@ -16,12 +16,13 @@ namespace Helper
         /// <param name="config">2D aray with parameter names and values for crop field configuration parameters</param>
         /// <param name="testResults">2D aray with parameter names and values for crop field configuration parameters</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
-        public static object[,] GetDailyNBalance(object[,] meanT, object[,] config, object[,] testResults)
+        public static object[,] GetDailyNBalance(object[,] meanT, object[,] config, object[,] testResults, object[,] nApplied)
         {
             Dictionary<DateTime, double> _tt = Functions.dictMaker(meanT, "MeanT");
             Config _config = new Config(config);
             Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
-            return NBalance.CalculateSoilNBalance(_tt, _config, _testResults);
+            Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
+            return NBalance.CalculateSoilNBalance(_tt, _config, _testResults, _nApplied);
         }
 
 
@@ -40,5 +41,7 @@ namespace Helper
             Dictionary<DateTime, double> AccTt = Functions.AccumulateTt(cropDates, tt);
             return CropModel.CalculateOutputs(AccTt, config);
         }
+
+
     }
 }

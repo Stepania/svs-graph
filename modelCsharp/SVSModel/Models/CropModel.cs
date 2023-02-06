@@ -23,7 +23,7 @@ namespace SVSModel
             Dictionary<string, double> cropCoeffs = new Dictionary<string, double>();
             for (int r = 1; r < (int)allCropCoeffs.Rows.Count; r++)
             {
-                cropCoeffs.Add(allCropCoeffs["Key"][r].ToString(), Double.Parse(allCropCoeffs[config.CropName][r].ToString()));
+                cropCoeffs.Add(allCropCoeffs["Key"][r].ToString(), Double.Parse(allCropCoeffs[config.CropNameFull][r].ToString()));
             }
 
             // Derive Crop Parameters

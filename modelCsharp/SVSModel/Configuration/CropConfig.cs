@@ -9,7 +9,7 @@ namespace Helper
     /// </summary>
     public class Crop
     {
-        public string CropName { get; private set; }
+        public string CropNameFull { get; private set; }
         public string EstablishStage { get; private set; }
         public string HarvestStage { get; private set; }
         public double SaleableYield { get; private set; }
@@ -26,7 +26,7 @@ namespace Helper
         public double NUptake { get; set; }
         public Crop(Dictionary<string, object> c, string pos)
         {
-            CropName = c[pos + "CropName"].ToString();
+            CropNameFull = c[pos + "CropNameFull"].ToString();
             EstablishStage = c[pos + "EstablishStage"].ToString();
             HarvestStage = c[pos + "HarvestStage"].ToString();
             SaleableYield = Functions.Num(c[pos + "SaleableYield"]);

@@ -58,6 +58,8 @@ namespace Helper
                     {
                         if (arr[r, 0].GetType() == typeof(ExcelDna.Integration.ExcelEmpty))
                         { }
+                        else if (arr[r, 0].ToString() == "")
+                        { }
                         else
                         {
                             dict.Add(Date(arr[r, 0]), Num(arr[r, c]));
