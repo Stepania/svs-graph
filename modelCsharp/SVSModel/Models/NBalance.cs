@@ -17,7 +17,7 @@ namespace SVSModel
         public static object[,] CalculateSoilNBalance(Dictionary<DateTime, double> meanT, Config config, 
                                                       Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nAapplied)
         {
-            DateTime[] simDates = Functions.DateSeries(config.Prior.EstablishDate, config.Following.HarvestDate);
+            DateTime[] simDates = Functions.DateSeries(config.Prior.HarvestDate.AddDays(-1), config.Following.HarvestDate);
 
             //Run crop model for each crop in rotation to calculate CropN (total standing in in crop) and Nuptake (Daily N removal from the soil by the crop)
             Dictionary<DateTime, double> NUptake = Functions.dictMaker(simDates, new double[simDates.Length]);
@@ -37,17 +37,20 @@ namespace SVSModel
                 Dictionary<DateTime, double> cropsNUptake = Functions.dictMaker(cropsOutPuts, "CropUptakeN");
                 Dictionary<DateTime, double> totalCropN = Functions.dictMaker(cropsOutPuts, "TotalCropN");
                 Dictionary<DateTime, double> productN = Functions.dictMaker(cropsOutPuts, "SaleableProductN");
-                foreach (KeyValuePair<DateTime, double> d in cropsNUptake)
+                foreach (DateTime d in cropsNUptake.Keys)
                 {
-                    NUptake[d.Key] = cropsNUptake[d.Key];
-                    CropN[d.Key] = totalCropN[d.Key];
-                    ProductN[d.Key] = productN[d.Key];
+                    if (d >= simDates[0])
+                    {
+                        NUptake[d] = cropsNUptake[d];
+                        CropN[d] = totalCropN[d];
+                        ProductN[d] = productN[d];
+                    }
                 }
 
                 //Pack final crop variables to field config dict for use in other parts of the N balance
                 crop.ResRoot = Functions.GetFinal(cropsOutPuts, "RootN");
-                crop.ResStover = Functions.GetFinal(cropsOutPuts, "StoverN");
-                crop.ResFieldLoss = Functions.GetFinal(cropsOutPuts, "FieldLossN");
+                crop.ResStover = Functions.GetFinal(cropsOutPuts, "StoverN") * crop.ResidueFactRetained;
+                crop.ResFieldLoss = Functions.GetFinal(cropsOutPuts, "FieldLossN") * crop.ResidueFactRetained;
                 crop.NUptake = Functions.GetFinal(cropsOutPuts, "TotalCropN");
             }
 
@@ -64,16 +67,11 @@ namespace SVSModel
             MineralNCalculations.TestCorrection(testResults, ref SoilN);
 
             //Add fertiliser that has already been applied to the N balance
-            Dictionary<DateTime, double> FertiliserN = MineralNCalculations.ApplyExistingFertiliser(simDates, nAapplied);
+            Dictionary<DateTime, double> FertiliserN = MineralNCalculations.ApplyExistingFertiliser(simDates, nAapplied, testResults, ref SoilN, ref LostN, config);
 
             //Calculate Fertiliser requirements and add into soil N
-            MineralNCalculations.DetermineFertRequirements(ref FertiliserN, ref SoilN, NResidues, NSoilOM, CropN, testResults, config);
+            MineralNCalculations.DetermineFertRequirements(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults, config);
 
-            foreach (DateTime d in simDates)
-            {
-                LostN[d] = FertiliserN[d] * (1/config.field.Efficiency) * (1 - config.field.Efficiency);
-            }
-            
             //Pack Daily State Variables into a 2D array so they can be output
             object[,] outputs = new object[simDates.Length + 1, 9];
 

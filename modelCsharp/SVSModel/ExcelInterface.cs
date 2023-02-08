@@ -7,8 +7,6 @@ namespace Helper
 {
     public class MyFunctions
     {
-
-
         /// <summary>
         /// Function that takes input data in 2D array format and calculates a N balance for a 3 crops rotation and returns N balance variables in 2D array format
         /// </summary>
@@ -18,13 +16,28 @@ namespace Helper
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
         public static object[,] GetDailyNBalance(object[,] meanT, object[,] config, object[,] testResults, object[,] nApplied)
         {
-            Dictionary<DateTime, double> _tt = Functions.dictMaker(meanT, "MeanT");
-            Config _config = new Config(config);
-            Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
-            Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
-            return NBalance.CalculateSoilNBalance(_tt, _config, _testResults, _nApplied);
-        }
+            List<string> configErrors = Functions.ValidateConfig(config);
 
+            if (configErrors.Count == 0)
+            {
+                Dictionary<DateTime, double> _tt = Functions.dictMaker(meanT, "MeanT");
+                Config _config = new Config(config);
+                Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
+                Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
+                return NBalance.CalculateSoilNBalance(_tt, _config, _testResults, _nApplied);
+            }
+            else
+            {
+                object[,] listOfComplaints = new object[configErrors.Count,1];
+                int c = 0;
+                foreach (string e in configErrors)
+                { 
+                    listOfComplaints[c, 0] = e;
+                    c++;
+                }
+                return listOfComplaints;
+            }
+        }
 
         /// <summary>
         /// Takes daily mean temperature 2D array format with date in the first column, calculates variables for a single crop and returns them in a 2D array)
@@ -42,6 +55,9 @@ namespace Helper
             return CropModel.CalculateOutputs(AccTt, config);
         }
 
-
+        public static object[,] GetCropCoefficients()
+        {
+            return Functions.packDataFrame(CropModel.LoadCropCoefficients());
+        }
     }
 }

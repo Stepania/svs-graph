@@ -20,6 +20,7 @@ namespace Helper
         public double MoistureContent { get; private set; }
         public DateTime EstablishDate { get; private set; }
         public DateTime HarvestDate { get; private set; }
+        public double ResidueFactRetained { get; private set; }
         public double ResRoot { get; set; }
         public double ResStover { get; set; }
         public double ResFieldLoss { get; set; }
@@ -29,13 +30,13 @@ namespace Helper
             CropNameFull = c[pos + "CropNameFull"].ToString();
             EstablishStage = c[pos + "EstablishStage"].ToString();
             HarvestStage = c[pos + "HarvestStage"].ToString();
-            SaleableYield = Functions.Num(c[pos + "SaleableYield"]);
-            Units = c[pos + "Units"].ToString();
+            SaleableYield = Functions.Num(c[pos + "SaleableYield"])*1000; //UI sends yield in t/ha but model works in kg/ha so convert here
             FieldLoss = Functions.Num(c[pos + "FieldLoss"]);
             DressingLoss = Functions.Num(c[pos + "DressingLoss"]);
             MoistureContent = Functions.Num(c[pos + "MoistureContent"]);
             EstablishDate = Functions.Date(c[pos + "EstablishDate"]);
             HarvestDate = Functions.Date(c[pos + "HarvestDate"]);
+            ResidueFactRetained = Constants.ResidueFactRetained[c[pos + "ResidueTreatment"].ToString()]; 
         }
     }
 }

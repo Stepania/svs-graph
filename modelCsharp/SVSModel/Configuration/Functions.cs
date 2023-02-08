@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.Analysis;
+using System;
 using System.Collections.Generic;
 
 namespace Helper
@@ -56,9 +57,10 @@ namespace Helper
                 {
                     for (int r = 1; r < Nrows; r++)
                     {
-                        if (arr[r, 0].GetType() == typeof(ExcelDna.Integration.ExcelEmpty))
+                        if ((arr[r, 0].GetType() == typeof(ExcelDna.Integration.ExcelEmpty)) || 
+                            (arr[r, c].GetType() == typeof(ExcelDna.Integration.ExcelEmpty)))
                         { }
-                        else if (arr[r, 0].ToString() == "")
+                        else if ((arr[r, 0].ToString() == "")|| (arr[r, c].ToString() == ""))
                         { }
                         else
                         {
@@ -139,6 +141,38 @@ namespace Helper
         }
 
         /// <summary>
+        /// Function that packs an array of variables into a specified column in a 2D array
+        /// </summary>
+        /// <param name="colInd">index position of the column</param>
+        /// <param name="column">array to be packed into column</param>
+        /// <param name="df">the 2D array that the column is to be packed into</param>
+        public static object[,] packDataFrame(DataFrame DF)
+        {
+            int rows = (int)DF.Rows.Count+2;
+            int cols = (int)DF.Columns.Count;
+            object[,] df = new object[rows, cols];
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    if (r == 0)
+                    {
+                        df[r, c] = DF.Columns[c].Name;
+                    }
+                    else if (r == 1)
+                    {
+                        df[r, c] = c;
+                    }
+                    else
+                    {
+                        df[r, c] = DF[r-2, c];
+                    }
+                }
+            }
+            return df;
+        }
+
+        /// <summary>
         /// Takes an array of daily scaller values (0-1) and multiplies them by the final value to give Daily State Variable values 
         /// </summary>
         /// <param name="scaller">2D array of daily values for 0-1 scaller</param>
@@ -189,6 +223,27 @@ namespace Helper
             return tt;
         }
 
+        /// <summary>
+        /// Function to convert a 2D array with a row of keys and a row of values into a dictionary
+        /// </summary>
+        /// <param name="arr">2D arry to be converted</param>
+        /// <returns>dictionary converted from arr</returns>
+        public static List<string> ValidateConfig(object[,] arr)
+        {
+            List<string> errorlist = new List<string>();
+            int Nrows = arr.GetLength(0);
+            for (int r = 0; r < Nrows; r++)
+            {
+                if (arr[r, 1].ToString() == "")
+                    errorlist.Add(arr[r, 0].ToString());
+                if (arr[r, 1].GetType() == typeof(ExcelDna.Integration.ExcelError))
+                    errorlist.Add(arr[r,0].ToString());
+                if (arr[r, 1].GetType() == typeof(ExcelDna.Integration.ExcelEmpty))
+                    errorlist.Add(arr[r, 0].ToString());
+            }
+            return errorlist;
+        }
+
         public static DateTime Date(object configDate)
         {
             if (configDate.GetType() == typeof(double))
@@ -202,6 +257,7 @@ namespace Helper
         }
         public static double Num(object configDouble)
         {
+            
             return Double.Parse(configDouble.ToString());
         }
     }

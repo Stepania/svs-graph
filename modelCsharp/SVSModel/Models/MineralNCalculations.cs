@@ -34,7 +34,8 @@ namespace SVSModel
                 }
                 minN[d] += residue[d];
                 minN[d] += som[d];
-                minN[d] -= uptake[d];
+                double actualUptake = uptake[d]; //Math.Min(uptake[d], minN[d]);
+                minN[d] -= actualUptake;
             }
             return minN;
         }
@@ -45,7 +46,10 @@ namespace SVSModel
         /// <param name="testResults">date indexed series of test results</param>
         /// <param name="soilN">date indexed series of soil mineral N estimates to be corrected with measurements.  Passed in as ref so 
         /// the corrections are applied to the property passed in</param>
-        public static void TestCorrection(Dictionary<DateTime, double> testResults, ref Dictionary<DateTime, double> soilN)
+        public static void TestCorrection(Dictionary<DateTime, 
+                                          double> testResults, 
+                                          ref Dictionary<DateTime, 
+                                          double> soilN)
         {
             foreach (DateTime d in testResults.Keys)
             {
@@ -56,7 +60,6 @@ namespace SVSModel
                     soilN[c] += correction;
                 }
             }
-
         }
 
         /// <summary>
@@ -70,21 +73,34 @@ namespace SVSModel
         /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns></returns>
         public static void DetermineFertRequirements(ref Dictionary<DateTime, double> fert,
-                                                                             ref Dictionary<DateTime, double> soilN, Dictionary<DateTime, double> residueMin,
-                                                                             Dictionary<DateTime, double> somN, Dictionary<DateTime, double> cropN,
-                                                                             Dictionary<DateTime, double> testResults, Config config)
+                                                     ref Dictionary<DateTime, double> soilN, 
+                                                     ref Dictionary<DateTime, double> lostN, 
+                                                     Dictionary<DateTime, double> residueMin,
+                                                     Dictionary<DateTime, double> somN, 
+                                                     Dictionary<DateTime, double> cropN,
+                                                     Dictionary<DateTime, double> testResults, 
+                                                     Config config)
         {
             //Make all the necessary data structures
             DateTime[] cropDates = Functions.DateSeries(config.Current.EstablishDate, config.Current.HarvestDate);
-            DateTime startSchedulleDate = config.Current.EstablishDate;
-            if (testResults.Keys.Count() < 0)
-                startSchedulleDate = testResults.Keys.Last();
+            DateTime startSchedulleDate = config.Current.EstablishDate; //Earliest start to schedulling is establishment date
+            if (testResults.Keys.Count > 0)
+                startSchedulleDate = testResults.Keys.Last(); //If test results specified after establishment that becomes start of schedulling date
+            DateTime lastFertDate = new DateTime();
+            foreach (DateTime d in fert.Keys)
+            {
+                if (fert[d] > 0)
+                    lastFertDate = d;
+            }
+            if (lastFertDate > startSchedulleDate)
+                startSchedulleDate = lastFertDate;  //If Fertiliser already applied after last test date them last fert date becomes start of scheudlling date
+            startSchedulleDate = startSchedulleDate.AddDays(1); //Start schedule the day after the last test or application
             DateTime[] schedullingDates = Functions.DateSeries(startSchedulleDate, config.Current.HarvestDate);
 
             //Calculate total N from mineralisatin over the duration of the crop
             double mineralisation = 0;
             double fertToDate = 0;
-            foreach (DateTime d in cropDates)
+            foreach (DateTime d in schedullingDates)
             {
                 mineralisation += residueMin[d];
                 mineralisation += somN[d];
@@ -97,7 +113,7 @@ namespace SVSModel
             double efficiency = config.field.Efficiency;
 
             // Calculate total fertiliser requirement and ammount to be applied at each application
-            double NFertReq = (CropN + trigger) - soilN[config.Current.EstablishDate] - mineralisation - fertToDate ;
+            double NFertReq = (CropN + trigger) - soilN[startSchedulleDate] - mineralisation - fertToDate ;
             NFertReq = Math.Max(0,NFertReq * 1 / efficiency);
             int splits = config.field.Splits;
             double NAppn = Math.Ceiling(NFertReq / splits);
@@ -113,17 +129,33 @@ namespace SVSModel
                         AddFertiliser(ref soilN, NAppn * efficiency, d, config);
                         fert[d] += NAppn;
                         FertApplied += NAppn;
+                        lostN[d] = NAppn * (1 - efficiency);
                     }
                 }
             }
         }
 
-        public static Dictionary<DateTime, double> ApplyExistingFertiliser(DateTime[] simDates, Dictionary<DateTime, double> nApplied)
+        public static Dictionary<DateTime, double> ApplyExistingFertiliser(DateTime[] simDates, 
+                                                                           Dictionary<DateTime, double> nApplied,
+                                                                           Dictionary<DateTime, double> testResults, 
+                                                                           ref Dictionary<DateTime, double> soilN,
+                                                                           ref Dictionary<DateTime, double> lostN,
+                                                                           Config config)
         {
             Dictionary<DateTime, double> fert = Functions.dictMaker(simDates, new double[simDates.Length]);
+            DateTime startApplicationDate = config.Current.EstablishDate; //Earliest start to schedulling is establishment date
+            if (testResults.Keys.Count > 0)
+                startApplicationDate = testResults.Keys.Last(); //If test results specified after establishment that becomes start of schedulling date
+            startApplicationDate = startApplicationDate.AddDays(1); //Start schedule the day after the last test or application
+            double efficiency = config.field.Efficiency;
             foreach (DateTime d in nApplied.Keys)
             {
+                if (d > startApplicationDate)
+                {
+                    AddFertiliser(ref soilN, nApplied[d] * efficiency, d, config);
+                }
                 fert[d] = nApplied[d];
+                lostN[d] = (1 - efficiency);
             }
             return fert;
         }

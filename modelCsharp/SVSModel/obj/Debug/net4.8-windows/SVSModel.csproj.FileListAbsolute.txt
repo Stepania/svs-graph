@@ -36,3 +36,5 @@ C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.dll
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.pdb
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.AssemblyReference.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.Properties.Resources.resources
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.GenerateResource.cache

@@ -11,7 +11,6 @@ namespace Helper
     {
         public double InitialN { get; private set; }
         public double HWEON { get; private set; }
-        public double EstablishFertN { get; private set; }
         public double Trigger { get; private set; }
         public double Efficiency { get; private set; }
         public int Splits { get; private set; }
