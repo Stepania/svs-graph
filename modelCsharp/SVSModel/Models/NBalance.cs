@@ -63,11 +63,11 @@ namespace SVSModel
             //Calculate soil N estimated without fertiliser or soil test results
             Dictionary<DateTime, double> SoilN = MineralNCalculations.Initial(simDates, config.field.InitialN, NUptake, NResidues, NSoilOM);
 
-            //Reset soil N with test valaues
-            MineralNCalculations.TestCorrection(testResults, ref SoilN);
-
             //Add fertiliser that has already been applied to the N balance
             Dictionary<DateTime, double> FertiliserN = MineralNCalculations.ApplyExistingFertiliser(simDates, nAapplied, testResults, ref SoilN, ref LostN, config);
+
+            //Reset soil N with test valaues
+            MineralNCalculations.TestCorrection(testResults, ref SoilN);
 
             //Calculate Fertiliser requirements and add into soil N
             MineralNCalculations.DetermineFertRequirements(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults, config);

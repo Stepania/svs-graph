@@ -41,7 +41,7 @@ namespace SVSModel
                     {
                         res[d] = res[d.AddDays(-1)];
                     }
-                    double mineralisation = res[d] * 0.001 * meanT[d];
+                    double mineralisation = res[d] * 0.012 * meanT[d];
                     res[d] -= mineralisation;
                     NResidues[d] += mineralisation;
                 }

@@ -28,11 +28,11 @@ namespace Helper
             }
             else
             {
-                object[,] listOfComplaints = new object[configErrors.Count,1];
+                object[,] listOfComplaints = new object[configErrors.Count,3];
                 int c = 0;
                 foreach (string e in configErrors)
                 { 
-                    listOfComplaints[c, 0] = e;
+                    listOfComplaints[c, 2] = e;
                     c++;
                 }
                 return listOfComplaints;

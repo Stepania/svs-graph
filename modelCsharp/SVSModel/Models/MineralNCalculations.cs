@@ -115,6 +115,7 @@ namespace SVSModel
             // Calculate total fertiliser requirement and ammount to be applied at each application
             double NFertReq = (CropN + trigger) - soilN[startSchedulleDate] - mineralisation - fertToDate ;
             NFertReq = Math.Max(0,NFertReq * 1 / efficiency);
+            
             int splits = config.field.Splits;
             double NAppn = Math.Ceiling(NFertReq / splits);
 
@@ -144,18 +145,17 @@ namespace SVSModel
         {
             Dictionary<DateTime, double> fert = Functions.dictMaker(simDates, new double[simDates.Length]);
             DateTime startApplicationDate = config.Current.EstablishDate; //Earliest start to schedulling is establishment date
-            if (testResults.Keys.Count > 0)
-                startApplicationDate = testResults.Keys.Last(); //If test results specified after establishment that becomes start of schedulling date
-            startApplicationDate = startApplicationDate.AddDays(1); //Start schedule the day after the last test or application
+            //if (testResults.Keys.Count > 0)
+            //    startApplicationDate = testResults.Keys.Last().AddDays(1); //If test results specified after establishment that becomes start of schedulling date
             double efficiency = config.field.Efficiency;
             foreach (DateTime d in nApplied.Keys)
             {
-                if (d > startApplicationDate)
+                if (d >= startApplicationDate)
                 {
                     AddFertiliser(ref soilN, nApplied[d] * efficiency, d, config);
                 }
                 fert[d] = nApplied[d];
-                lostN[d] = (1 - efficiency);
+                lostN[d] = nApplied[d] * (1 - efficiency);
             }
             return fert;
         }

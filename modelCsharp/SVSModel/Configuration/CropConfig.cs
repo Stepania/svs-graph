@@ -21,6 +21,7 @@ namespace Helper
         public DateTime EstablishDate { get; private set; }
         public DateTime HarvestDate { get; private set; }
         public double ResidueFactRetained { get; private set; }
+        public double ResidueFactIncorporated { get; private set; }
         public double ResRoot { get; set; }
         public double ResStover { get; set; }
         public double ResFieldLoss { get; set; }
@@ -36,7 +37,8 @@ namespace Helper
             MoistureContent = Functions.Num(c[pos + "MoistureContent"]);
             EstablishDate = Functions.Date(c[pos + "EstablishDate"]);
             HarvestDate = Functions.Date(c[pos + "HarvestDate"]);
-            ResidueFactRetained = Constants.ResidueFactRetained[c[pos + "ResidueTreatment"].ToString()]; 
+            ResidueFactRetained = Constants.ResidueFactRetained[c[pos + "ResidueRemoval"].ToString()];
+            ResidueFactIncorporated = Constants.ResidueIncorporation[c[pos + "ResidueIncorporation"].ToString()];
         }
     }
 }

@@ -110,11 +110,8 @@ namespace SVSModel
         public static DataFrame LoadCropCoefficients()
         {
             string resourceName = "SVSModel.Data.CropCoefficientTableFull.csv";
-
             var assembly = Assembly.GetExecutingAssembly();
-            string[] names = assembly.GetManifestResourceNames();
             Stream csv = assembly.GetManifestResourceStream(resourceName);
-            //Stream datFile = Properties.Resources.CropCoefficientTableFull;
             DataFrame allCropCoeffs = DataFrame.LoadCsv(csv);
             return allCropCoeffs;
         }

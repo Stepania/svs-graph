@@ -17,8 +17,12 @@ namespace Helper
         public static Dictionary<string, double> UnitConversions = new Dictionary<string, double>() { { "t/ha", 1000 }, { "kg/ha", 1.0 }, { "kg/head", 1.0 } };
 
         /// <summary>Dictionary containing conversion from specified residue treatments to proportoins returned </summary>
-        public static Dictionary<string, double> ResidueFactRetained = new Dictionary<string, double>() { {"All removed",0 },
-            {"Surface retained",1.0},{"Baled",0.2 },{"Burnt",0.05},{"Grazed",0.3},{"Incorporated",0.9}};
+        public static Dictionary<string, double> ResidueFactRetained = new Dictionary<string, double>() {{"None removed",1.0},
+                                                            {"Baled",0.2 },{"Burnt",0.05},{"Grazed",0.4},{"All removed",0.0}};
+
+        /// <summary>Dictionary containing conversion from specified residue treatments to proportoins returned </summary>
+        public static Dictionary<string, double> ResidueIncorporation = new Dictionary<string, double>() {{"None (Surface)",0.0},
+                                                            {"Part (Cultivate)",0.5 },{"Full (Plough)",0.95}};
 
     }
 }
