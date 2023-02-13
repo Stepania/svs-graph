@@ -5,7 +5,7 @@ using Helper;
 
 namespace SVSModel
 {
-    class NBalance
+    class Simulation
     {
         /// <summary>
         /// Function that steps through each of the components of the N balance for a crop rotation and returns the results in 2D array format
@@ -14,33 +14,30 @@ namespace SVSModel
         /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <param name="testResults">A date indexed dictionary with soil mineral N test results</param>
         /// <returns>A 2D array of N balance variables</returns>
-        public static object[,] CalculateSoilNBalance(Dictionary<DateTime, double> meanT,
+        public static object[,] SimulateField(Dictionary<DateTime, double> meanT,
                                                       Dictionary<DateTime, double> meanRain,
                                                       Dictionary<DateTime, double> meanPET,
-                                                      Config config, 
                                                       Dictionary<DateTime, double> testResults, 
-                                                      Dictionary<DateTime, double> nAapplied)
+                                                      Dictionary<DateTime, double> nAapplied,
+                                                      Dictionary<string, object> config)
         {
-            DateTime[] simDates = Functions.DateSeries(config.Prior.HarvestDate.AddDays(-1), config.Following.HarvestDate);
+            Config.Initialise(config);
+            DateTime[] simDates = Functions.DateSeries(Config.Prior.HarvestDate.AddDays(-1), Config.Following.HarvestDate);
 
             //Run crop model for each crop in rotation to calculate CropN (total standing in in crop) and Nuptake (Daily N removal from the soil by the crop)
             Dictionary<DateTime, double> NUptake = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> CropN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> ProductN = Functions.dictMaker(simDates, new double[simDates.Length]);
-            Dictionary<DateTime, double> LostN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> Cover = Functions.dictMaker(simDates, new double[simDates.Length]);
-            Dictionary<DateTime, double> RSWC = Functions.dictMaker(simDates, new double[simDates.Length]);
-            Dictionary<DateTime, double> Drainage = Functions.dictMaker(simDates, new double[simDates.Length]);
-            Dictionary<DateTime, double> Irrigation = Functions.dictMaker(simDates, new double[simDates.Length]);
             
-            foreach (Crop crop in config.Rotation) //Step through each crop position
+            foreach (CropConfig crop in Config.Rotation) //Step through each crop position
             {
                 //Make date series for duraion of the crop and accumulate thermal time over that period
                 DateTime[] cropDates = Functions.DateSeries(crop.EstablishDate, crop.HarvestDate);
                 Dictionary<DateTime, double> AccTt = Functions.AccumulateTt(cropDates, meanT);
 
                 //Calculated outputs for each crop
-                object[,] cropsOutPuts = CropModel.CalculateOutputs(AccTt, crop);
+                object[,] cropsOutPuts = Crop.Grow(AccTt, crop);
 
                 //Pack Crop N and N uptake results for each crop into the corresponding variables for the rotation (i.e stick all crops together to form the rotation)
                 Dictionary<DateTime, double> cropsNUptake = Functions.dictMaker(cropsOutPuts, "CropUptakeN");
@@ -66,25 +63,30 @@ namespace SVSModel
             }
 
             // Calculate soil water content and drainage
-            SoilWater.Balance(ref RSWC, ref Drainage, ref Irrigation, meanRain, meanPET, Cover, config);
+            Dictionary<DateTime, double> RSWC = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> Drainage = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> Irrigation = Functions.dictMaker(simDates, new double[simDates.Length]);
+            SoilWater.Balance(ref RSWC, ref Drainage, ref Irrigation, meanRain, meanPET, Cover);
             
             // Calculate residue mineralisation
-            Dictionary<DateTime, double> NResidues = ResidueMineralisationModel.CalculateOutputs(simDates, meanT, config);
+            Dictionary<DateTime, double> NResidues = Residues.Mineralisation(RSWC, meanT);
 
             // Calculate soil OM mineralisation
-            Dictionary<DateTime, double> NSoilOM = SOMMineralisationModel.CalculateOutputs(simDates, meanT, config);
+            Dictionary<DateTime, double> NSoilOM = SoilOrganic.Mineralisation(RSWC, meanT);
 
             //Calculate soil N estimated without fertiliser or soil test results
-            Dictionary<DateTime, double> SoilN = MineralNCalculations.Initial(simDates, config.field.InitialN, NUptake, NResidues, NSoilOM);
+            Dictionary<DateTime, double> SoilN = SoilNitrogen.InitialBalance(simDates, NUptake, NResidues, NSoilOM);
 
             //Add fertiliser that has already been applied to the N balance
-            Dictionary<DateTime, double> FertiliserN = MineralNCalculations.ApplyExistingFertiliser(simDates, nAapplied, testResults, ref SoilN, ref LostN, config);
+            Dictionary<DateTime, double> LostN = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> FertiliserN = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Fertiliser.ApplyExistingFertiliser(ref FertiliserN, ref SoilN, ref LostN, nAapplied);
 
             //Reset soil N with test valaues
-            MineralNCalculations.TestCorrection(testResults, ref SoilN);
+            SoilNitrogen.TestCorrection(testResults, ref SoilN);
 
             //Calculate Fertiliser requirements and add into soil N
-            MineralNCalculations.DetermineFertRequirements(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults, config);
+            Fertiliser.RemainingFertiliserSchedule(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults);
 
             //Pack Daily State Variables into a 2D array so they can be output
             object[,] outputs = new object[simDates.Length + 1, 13];

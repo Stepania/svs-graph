@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SVSModel
 {
-    class SOMMineralisationModel
+    class SoilOrganic
     {
         /// <summary>
         /// Calculates the daily nitrogen mineralised as a result of soil organic matter decomposition
@@ -16,17 +16,16 @@ namespace SVSModel
         /// <param name="meanT">A date indexed dictionary of daily mean temperatures</param>
         /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>Date indexed series of daily N mineralised from residues</returns>
-        public static Dictionary<DateTime, double> CalculateOutputs(DateTime[] simDates, Dictionary<DateTime, double> meanT, Config config)
+        public static Dictionary<DateTime, double> Mineralisation(Dictionary<DateTime, double> rswc, Dictionary<DateTime, double> meanT)
         {
-            int durat = simDates.Length;
-            double hweon = config.field.HWEON;
-            double swf = 1.0;
+            DateTime[] simDates = rswc.Keys.ToArray();
+            double hweon = Config.Field.HWEON;//config.Field.HWEON;
             double mrc = 0.005;
 
-            Dictionary<DateTime, double> NSoilOM = Functions.dictMaker(simDates, new double[durat]);
+            Dictionary<DateTime, double> NSoilOM = Functions.dictMaker(simDates, new double[simDates.Length]);
             foreach (DateTime d in simDates)
             {
-                double somMin = hweon * meanT[d] * swf * mrc;
+                double somMin = hweon * meanT[d] * rswc[d] * mrc;
                 NSoilOM[d] = somMin;
             }
             return NSoilOM;

@@ -8,25 +8,25 @@ using Microsoft.Data.Analysis;
 
 namespace SVSModel
 {
-    public class CropModel
+    public class Crop
     {
         /// <summary>
         /// Returns daily N uptake over the duration of the Tt input data for Root, Stover, Product and loss N as well as cover and root depth
         /// </summary>
         /// <param name="tt">An array containing the accumulated thermal time for the duration of the crop</param>
-        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
+        /// <param name="cf">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object[,] CalculateOutputs(Dictionary<DateTime, double> tt, Crop config)
+        public static object[,] Grow(Dictionary<DateTime, double> tt, CropConfig cf)
         {
             ///Set up data structures
-            DateTime[] cropDates = Functions.DateSeries(config.EstablishDate, config.HarvestDate);
-            DataFrame allCropParams = CropModel.LoadCropCoefficients();// DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
-            CropParams cropParams = ExtractCropParams(config.CropNameFull, allCropParams);// new Dictionary<string, double>();
+            DateTime[] cropDates = Functions.DateSeries(cf.EstablishDate, cf.HarvestDate);
+            DataFrame allCropParams = Crop.LoadCropCoefficients();// DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
+            CropParams cropParams = ExtractCropParams(cf.CropNameFull, allCropParams);// new Dictionary<string, double>();
    
             // Derive Crop Parameters
             double Tt_Harv = tt.Values.Last();
-            double Tt_estab = Tt_Harv * (Constants.PropnTt[config.EstablishStage] / Constants.PropnTt[config.HarvestStage]);
-            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[config.HarvestStage]);
+            double Tt_estab = Tt_Harv * (Constants.PropnTt[cf.EstablishStage] / Constants.PropnTt[cf.HarvestStage]);
+            double Xo_Biomass = (Tt_Harv + Tt_estab) * .45 * (1 / Constants.PropnTt[cf.HarvestStage]);
             double b_Biomass = Xo_Biomass * .25;
             double T_mat = Xo_Biomass * 2.2222;
             double T_maxRD = Constants.PropnTt["EarlyReproductive"] * T_mat;
@@ -36,22 +36,22 @@ namespace SVSModel
             double typicalYield = cropParams.TypicalYield * Constants.UnitConversions[cropParams.TypicalYieldUnits];
             double a_harvestIndex = cropParams.TypicalHI - cropParams.HIRange;
             double b_harvestIndex = cropParams.HIRange / typicalYield;
-            double stageCorrection = 1 / Constants.PropnMaxDM[config.HarvestStage];
+            double stageCorrection = 1 / Constants.PropnMaxDM[cf.HarvestStage];
 
             // derive crop Harvest State Variables 
-            double fSaleableYieldFwt = config.SaleableYield;
-            double fFieldLossPct = config.FieldLoss;
-            double fTotalProductFwt = fSaleableYieldFwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - config.DressingLoss / 100));
+            double fSaleableYieldFwt = cf.SaleableYield;
+            double fFieldLossPct = cf.FieldLoss;
+            double fTotalProductFwt = fSaleableYieldFwt * (1 / (1 - fFieldLossPct / 100)) * (1 / (1 - cf.DressingLoss / 100));
             // Crop Failure.  If yield is very low or field loss is very high assume complete crop failure.  Uptake equation are too sensitive saleable yields close to zero and field losses close to 100
-            if ((config.SaleableYield < (typicalYield * 0.05)) || (config.FieldLoss > 95))
+            if ((cf.SaleableYield < (typicalYield * 0.05)) || (cf.FieldLoss > 95))
             {
                 fFieldLossPct = 100;
                 fTotalProductFwt = typicalYield * (1 / (1 - cropParams.TypicalDressingLoss / 100));
             }
-            double fTotalProductDwt = fTotalProductFwt * (1 - config.MoistureContent / 100);
+            double fTotalProductDwt = fTotalProductFwt * (1 - cf.MoistureContent / 100);
             double fFieldLossDwt = fTotalProductDwt * fFieldLossPct / 100;
             double fFieldLossN = fFieldLossDwt * cropParams.ProductN / 100;
-            double fDressingLossDwt = fTotalProductDwt * config.DressingLoss / 100;
+            double fDressingLossDwt = fTotalProductDwt * cf.DressingLoss / 100;
             double fDressingLossN = fDressingLossDwt * cropParams.ProductN / 100;
             double fSaleableProductDwt = fTotalProductDwt - fFieldLossDwt - fDressingLossDwt;
             double fSaleableProductN = fSaleableProductDwt * cropParams.ProductN / 100;
