@@ -24,9 +24,10 @@ namespace Helper
                 Dictionary<DateTime, double> _rain = Functions.dictMaker(met, "Rain");
                 Dictionary<DateTime, double> _pet = Functions.dictMaker(met, "MeanPET");
                 Config _config = new Config(config);
+                Config2.Initialise(config);
                 Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
                 Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
-                return NBalance.CalculateSoilNBalance(_tt, _rain, _pet, _config, _testResults, _nApplied);
+                return Simulation.SimulateField(_tt, _rain, _pet, _config, _testResults, _nApplied);
             }
             else
             {
@@ -50,16 +51,16 @@ namespace Helper
         public static object[,] GetDailyCropData(double[] Tt, object[,] Config)
         {
             Dictionary<string, object> c = Functions.dictMaker(Config);
-            Crop config = new Crop(c, "Current");
+            CropConfig config = new CropConfig(c, "Current");
             DateTime[] cropDates = Functions.DateSeries(config.EstablishDate, config.HarvestDate);
             Dictionary<DateTime, double> tt = Functions.dictMaker(cropDates, Tt);
             Dictionary<DateTime, double> AccTt = Functions.AccumulateTt(cropDates, tt);
-            return CropModel.CalculateOutputs(AccTt, config);
+            return Crop.Grow(AccTt, config);
         }
 
         public static object[,] GetCropCoefficients()
         {
-            return Functions.packDataFrame(CropModel.LoadCropCoefficients());
+            return Functions.packDataFrame(SVSModel.Crop.LoadCropCoefficients());
         }
     }
 }

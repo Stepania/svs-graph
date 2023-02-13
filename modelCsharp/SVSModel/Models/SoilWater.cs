@@ -26,12 +26,12 @@ namespace SVSModel
         {
             DateTime[] simDates = RSWC.Keys.ToArray();
             Dictionary<DateTime, double> SWC = Functions.dictMaker(simDates, new double[simDates.Length]);
-            double dul = config.field.AWC;
+            double dul = config.Field.AWC;
             foreach (DateTime d in simDates)
             {
                 if (d == simDates[0])
                 {
-                    SWC[simDates[0]] = dul * config.field.PrePlantRainFactor;
+                    SWC[simDates[0]] = dul * config.Field.PrePlantRainFactor;
                     RSWC[simDates[0]] = SWC[simDates[0]] / dul;
                 }
                 else
@@ -48,9 +48,9 @@ namespace SVSModel
                     else
                     {
                         Drainage[d] = 0.0;
-                        if (SWC[d]/dul < config.field.IrrigationTrigger)
+                        if (SWC[d]/dul < config.Field.IrrigationTrigger)
                         {
-                            double apply = dul * (config.field.IrrigationRefill - config.field.IrrigationTrigger);
+                            double apply = dul * (config.Field.IrrigationRefill - config.Field.IrrigationTrigger);
                             SWC[d] += apply;
                             Irrigation[d] = apply;
                         }

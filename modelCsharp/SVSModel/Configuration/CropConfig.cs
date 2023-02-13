@@ -7,7 +7,7 @@ namespace Helper
     /// Class that stores the configuration information for a specific crop in the correct type.  
     /// I.e constructor takes all config settings as objects and converts them to appropriates types
     /// </summary>
-    public class Crop
+    public class CropConfig
     {
         public string CropNameFull { get; private set; }
         public string EstablishStage { get; private set; }
@@ -26,7 +26,7 @@ namespace Helper
         public double ResStover { get; set; }
         public double ResFieldLoss { get; set; }
         public double NUptake { get; set; }
-        public Crop(Dictionary<string, object> c, string pos)
+        public CropConfig(Dictionary<string, object> c, string pos)
         {
             CropNameFull = c[pos + "CropNameFull"].ToString();
             EstablishStage = c[pos + "EstablishStage"].ToString();
