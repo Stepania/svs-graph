@@ -12,17 +12,15 @@ namespace SVSModel
         /// <summary>
         /// Calculates soil mineral nitrogen from an assumed initial value and modeled crop uptake and mineralisation from residues and soil organic matter
         /// </summary>
-        /// <param name="simDates">series of dates over the duration of the simulation</param>
-        /// <param name="initialN">assumed mineral at the start of the first crop in the rotation</param>
         /// <param name="uptake">series of daily N uptake values over the duration of the rotatoin</param>
         /// <param name="residue">series of mineral N released daily to the soil from residue mineralisation</param>
         /// <param name="som">series of mineral N released daily to the soil from organic matter</param>
         /// <returns>date indexed series of estimated soil mineral N content</returns>
-        public static Dictionary<DateTime, double> InitialBalance(DateTime[] simDates, 
-                                                                  Dictionary<DateTime, double> uptake,
+        public static Dictionary<DateTime, double> InitialBalance(Dictionary<DateTime, double> uptake,
                                                                   Dictionary<DateTime, double> residue, 
                                                                   Dictionary<DateTime, double> som)
         {
+            DateTime[] simDates = uptake.Keys.ToArray();
             Dictionary<DateTime, double> soilN = Functions.dictMaker(simDates, new double[simDates.Length]);
             foreach (DateTime d in simDates)
             {

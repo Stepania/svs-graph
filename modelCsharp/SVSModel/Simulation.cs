@@ -11,8 +11,11 @@ namespace SVSModel
         /// Function that steps through each of the components of the N balance for a crop rotation and returns the results in 2D array format
         /// </summary>
         /// <param name="meanT">A date indexed dictionary of daily mean temperatures</param>
-        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
+        /// <param name="meanRain">A date indexed dictionary of daily mean rainfall</param>
+        /// <param name="meanPET">A date indexed dictionary of daily mean potential evapotranspiration</param>
         /// <param name="testResults">A date indexed dictionary with soil mineral N test results</param>
+        /// <param name="nAapplied">A date indexed dictionary of N already applied (or planned) </param>
+        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>A 2D array of N balance variables</returns>
         public static object[,] SimulateField(Dictionary<DateTime, double> meanT,
                                                       Dictionary<DateTime, double> meanRain,
@@ -75,7 +78,7 @@ namespace SVSModel
             Dictionary<DateTime, double> NSoilOM = SoilOrganic.Mineralisation(RSWC, meanT);
 
             //Calculate soil N estimated without fertiliser or soil test results
-            Dictionary<DateTime, double> SoilN = SoilNitrogen.InitialBalance(simDates, NUptake, NResidues, NSoilOM);
+            Dictionary<DateTime, double> SoilN = SoilNitrogen.InitialBalance(NUptake, NResidues, NSoilOM);
 
             //Add fertiliser that has already been applied to the N balance
             Dictionary<DateTime, double> LostN = Functions.dictMaker(simDates, new double[simDates.Length]);

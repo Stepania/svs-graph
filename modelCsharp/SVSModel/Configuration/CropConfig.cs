@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Helper
 {
     /// <summary>
-    /// Class that stores the configuration information for a specific crop in the correct type.  
+    /// Class that stores the configuration information in the correct type for a specific crop .  
     /// I.e constructor takes all config settings as objects and converts them to appropriates types
     /// </summary>
     public class CropConfig

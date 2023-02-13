@@ -12,12 +12,13 @@ namespace SVSModel
         /// <summary>
         /// Adds specified establishment fert to the soil N then determines how much additional fertiliser N is required and when the crop will need it.
         /// </summary>
+        /// <param name="fert">Date indexed series of fertiliser applied</param>
         /// <param name="soilN">Date indexed series of soil N corrected for test values, passed as ref so scheduled fertiliser is added to this property</param>
+        /// <param name="lostN">Date indexed series of N losses from leaching or gasious</param>
         /// <param name="residueMin">Date indexed series of daily mineralisation from residues</param>
         /// <param name="somN">Date indexed series of daily mineralisation from soil organic matter</param>
         /// <param name="cropN">Date indexed series of standing crop N</param>
         /// <param name="testResults">Date indexed set of test values</param>
-        /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns></returns>
         public static void RemainingFertiliserSchedule(ref Dictionary<DateTime, double> fert,
                                                      ref Dictionary<DateTime, double> soilN, 

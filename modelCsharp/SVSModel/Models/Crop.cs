@@ -16,7 +16,8 @@ namespace SVSModel
         /// <param name="tt">An array containing the accumulated thermal time for the duration of the crop</param>
         /// <param name="cf">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object[,] Grow(Dictionary<DateTime, double> tt, CropConfig cf)
+        public static object[,] Grow(Dictionary<DateTime, double> tt, 
+                                     CropConfig cf)
         {
             ///Set up data structures
             DateTime[] cropDates = Functions.DateSeries(cf.EstablishDate, cf.HarvestDate);

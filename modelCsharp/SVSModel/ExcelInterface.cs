@@ -10,9 +10,9 @@ namespace Helper
         /// <summary>
         /// Function that takes input data in 2D array format and calculates a N balance for a 3 crops rotation and returns N balance variables in 2D array format
         /// </summary>
-        /// <param name="meanT">2D Array with dates in first column and daily mean temperature over the duration of the rotation in the second column</param>
-        /// <param name="config">2D aray with parameter names and values for crop field configuration parameters</param>
-        /// <param name="testResults">2D aray with parameter names and values for crop field configuration parameters</param>
+        /// <param name="met">2D Array with dates in first column and daily meterological data over the duration of the rotation in the second column</param>
+        /// <param name="config">2D array with parameter names and values for crop field configuration parameters</param>
+        /// <param name="testResults">2D array with dates in teh first column and soil N test results in the second</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
         public static object[,] GetDailyNBalance(object[,] met, object[,] config, object[,] testResults, object[,] nApplied)
         {
