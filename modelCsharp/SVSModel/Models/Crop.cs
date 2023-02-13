@@ -21,7 +21,7 @@ namespace SVSModel
         {
             ///Set up data structures
             DateTime[] cropDates = Functions.DateSeries(cf.EstablishDate, cf.HarvestDate);
-            DataFrame allCropParams = Crop.LoadCropCoefficients();// DataFrame.LoadCsv("C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\Data\\CropCoefficientTable.csv");
+            DataFrame allCropParams = Crop.LoadCropCoefficients();
             CropParams cropParams = ExtractCropParams(cf.CropNameFull, allCropParams);// new Dictionary<string, double>();
    
             // Derive Crop Parameters
