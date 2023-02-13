@@ -19,7 +19,6 @@ namespace SVSModel
         /// <param name="som">series of mineral N released daily to the soil from organic matter</param>
         /// <returns>date indexed series of estimated soil mineral N content</returns>
         public static Dictionary<DateTime, double> InitialBalance(DateTime[] simDates, 
-                                                                  double initialN, 
                                                                   Dictionary<DateTime, double> uptake,
                                                                   Dictionary<DateTime, double> residue, 
                                                                   Dictionary<DateTime, double> som)
@@ -29,7 +28,7 @@ namespace SVSModel
             {
                 if (d == simDates[0])
                 {
-                    soilN[simDates[0]] = initialN;
+                    soilN[simDates[0]] = Config.Field.InitialN;
                 }
                 else
                 {

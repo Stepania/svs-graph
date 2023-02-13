@@ -23,11 +23,10 @@ namespace Helper
                 Dictionary<DateTime, double> _tt = Functions.dictMaker(met, "MeanT");
                 Dictionary<DateTime, double> _rain = Functions.dictMaker(met, "Rain");
                 Dictionary<DateTime, double> _pet = Functions.dictMaker(met, "MeanPET");
-                Config _config = new Config(config);
-                Config2.Initialise(config);
                 Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
                 Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
-                return Simulation.SimulateField(_tt, _rain, _pet, _config, _testResults, _nApplied);
+                Dictionary<string, object> _config = Functions.dictMaker(config);
+                return Simulation.SimulateField(_tt, _rain, _pet, _testResults, _nApplied, _config);
             }
             else
             {

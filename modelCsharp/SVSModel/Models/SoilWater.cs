@@ -21,17 +21,16 @@ namespace SVSModel
                                    ref Dictionary<DateTime, double> Irrigation,
                                    Dictionary<DateTime, double> meanRain, 
                                    Dictionary<DateTime, double> meanPET, 
-                                   Dictionary<DateTime, double> cover, 
-                                   Config config)
+                                   Dictionary<DateTime, double> cover)
         {
             DateTime[] simDates = RSWC.Keys.ToArray();
             Dictionary<DateTime, double> SWC = Functions.dictMaker(simDates, new double[simDates.Length]);
-            double dul = config.Field.AWC;
+            double dul = Config.Field.AWC;
             foreach (DateTime d in simDates)
             {
                 if (d == simDates[0])
                 {
-                    SWC[simDates[0]] = dul * config.Field.PrePlantRainFactor;
+                    SWC[simDates[0]] = dul * Config.Field.PrePlantRainFactor;
                     RSWC[simDates[0]] = SWC[simDates[0]] / dul;
                 }
                 else
@@ -48,9 +47,9 @@ namespace SVSModel
                     else
                     {
                         Drainage[d] = 0.0;
-                        if (SWC[d]/dul < config.Field.IrrigationTrigger)
+                        if (SWC[d]/dul < Config.Field.IrrigationTrigger)
                         {
-                            double apply = dul * (config.Field.IrrigationRefill - config.Field.IrrigationTrigger);
+                            double apply = dul * (Config.Field.IrrigationRefill - Config.Field.IrrigationTrigger);
                             SWC[d] += apply;
                             Irrigation[d] = apply;
                         }
