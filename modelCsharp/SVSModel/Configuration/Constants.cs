@@ -24,5 +24,17 @@ namespace Helper
         public static Dictionary<string, double> ResidueIncorporation = new Dictionary<string, double>() {{"None (Surface)",0.0},
                                                             {"Part (Cultivate)",0.5 },{"Full (Plough)",0.95}};
 
+        /// <summary>Dictionary containing conversion from specified rainfall conditions to a factor </summary>
+        public static Dictionary<string, double> RainFactors = new Dictionary<string, double>() { { "Very Wet", 1.7}, { "Wet", 1.35},
+                                                             {"Typical", 1.0 }, {"Dry",0.65}, { "Very Dry", 0.3} };
+        
+        /// <summary>Dictionary containing conversion from specified irrigation method to trigger point factors  </summary>
+        public static Dictionary<string, double> IrrigationTriggers = new Dictionary<string, double>() { { "None", 0.0},
+                                                              {"Some", 0.4 }, {"Full",0.7} };
+
+        /// <summary>Dictionary containing conversion from specified irrigation method to refill target factors </summary>
+        public static Dictionary<string, double> IrrigationRefull = new Dictionary<string, double>() { { "None", 0.0},
+                                                              {"Some", 0.8 }, {"Full",0.9} };
+
     }
 }

@@ -14,17 +14,19 @@ namespace Helper
         /// <param name="config">2D aray with parameter names and values for crop field configuration parameters</param>
         /// <param name="testResults">2D aray with parameter names and values for crop field configuration parameters</param>
         /// <returns>Dictionary with parameter names as keys and parameter values as values</returns>
-        public static object[,] GetDailyNBalance(object[,] meanT, object[,] config, object[,] testResults, object[,] nApplied)
+        public static object[,] GetDailyNBalance(object[,] met, object[,] config, object[,] testResults, object[,] nApplied)
         {
             List<string> configErrors = Functions.ValidateConfig(config);
 
             if (configErrors.Count == 0)
             {
-                Dictionary<DateTime, double> _tt = Functions.dictMaker(meanT, "MeanT");
+                Dictionary<DateTime, double> _tt = Functions.dictMaker(met, "MeanT");
+                Dictionary<DateTime, double> _rain = Functions.dictMaker(met, "Rain");
+                Dictionary<DateTime, double> _pet = Functions.dictMaker(met, "MeanPET");
                 Config _config = new Config(config);
                 Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
                 Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
-                return NBalance.CalculateSoilNBalance(_tt, _config, _testResults, _nApplied);
+                return NBalance.CalculateSoilNBalance(_tt, _rain, _pet, _config, _testResults, _nApplied);
             }
             else
             {

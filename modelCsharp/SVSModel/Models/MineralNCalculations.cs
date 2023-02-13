@@ -85,7 +85,8 @@ namespace SVSModel
             DateTime[] cropDates = Functions.DateSeries(config.Current.EstablishDate, config.Current.HarvestDate);
             DateTime startSchedulleDate = config.Current.EstablishDate; //Earliest start to schedulling is establishment date
             if (testResults.Keys.Count > 0)
-                startSchedulleDate = testResults.Keys.Last(); //If test results specified after establishment that becomes start of schedulling date
+                if (testResults.Keys.Last() > config.Current.EstablishDate) //If test results specified after establishment that becomes start of schedulling date
+                     startSchedulleDate = testResults.Keys.Last();
             DateTime lastFertDate = new DateTime();
             foreach (DateTime d in fert.Keys)
             {
@@ -144,7 +145,7 @@ namespace SVSModel
                                                                            Config config)
         {
             Dictionary<DateTime, double> fert = Functions.dictMaker(simDates, new double[simDates.Length]);
-            DateTime startApplicationDate = config.Current.EstablishDate; //Earliest start to schedulling is establishment date
+            DateTime startApplicationDate = config.Prior.HarvestDate.AddDays(1); //Earliest start to schedulling is establishment date
             //if (testResults.Keys.Count > 0)
             //    startApplicationDate = testResults.Keys.Last().AddDays(1); //If test results specified after establishment that becomes start of schedulling date
             double efficiency = config.field.Efficiency;

@@ -14,8 +14,12 @@ namespace SVSModel
         /// <param name="config">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <param name="testResults">A date indexed dictionary with soil mineral N test results</param>
         /// <returns>A 2D array of N balance variables</returns>
-        public static object[,] CalculateSoilNBalance(Dictionary<DateTime, double> meanT, Config config, 
-                                                      Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nAapplied)
+        public static object[,] CalculateSoilNBalance(Dictionary<DateTime, double> meanT,
+                                                      Dictionary<DateTime, double> meanRain,
+                                                      Dictionary<DateTime, double> meanPET,
+                                                      Config config, 
+                                                      Dictionary<DateTime, double> testResults, 
+                                                      Dictionary<DateTime, double> nAapplied)
         {
             DateTime[] simDates = Functions.DateSeries(config.Prior.HarvestDate.AddDays(-1), config.Following.HarvestDate);
 
@@ -24,6 +28,11 @@ namespace SVSModel
             Dictionary<DateTime, double> CropN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> ProductN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> LostN = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> Cover = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> RSWC = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> Drainage = Functions.dictMaker(simDates, new double[simDates.Length]);
+            Dictionary<DateTime, double> Irrigation = Functions.dictMaker(simDates, new double[simDates.Length]);
+            
             foreach (Crop crop in config.Rotation) //Step through each crop position
             {
                 //Make date series for duraion of the crop and accumulate thermal time over that period
@@ -37,6 +46,7 @@ namespace SVSModel
                 Dictionary<DateTime, double> cropsNUptake = Functions.dictMaker(cropsOutPuts, "CropUptakeN");
                 Dictionary<DateTime, double> totalCropN = Functions.dictMaker(cropsOutPuts, "TotalCropN");
                 Dictionary<DateTime, double> productN = Functions.dictMaker(cropsOutPuts, "SaleableProductN");
+                Dictionary<DateTime, double> cover = Functions.dictMaker(cropsOutPuts, "Cover");
                 foreach (DateTime d in cropsNUptake.Keys)
                 {
                     if (d >= simDates[0])
@@ -44,6 +54,7 @@ namespace SVSModel
                         NUptake[d] = cropsNUptake[d];
                         CropN[d] = totalCropN[d];
                         ProductN[d] = productN[d];
+                        Cover[d] = cover[d];
                     }
                 }
 
@@ -54,6 +65,9 @@ namespace SVSModel
                 crop.NUptake = Functions.GetFinal(cropsOutPuts, "TotalCropN");
             }
 
+            // Calculate soil water content and drainage
+            SoilWater.Balance(ref RSWC, ref Drainage, ref Irrigation, meanRain, meanPET, Cover, config);
+            
             // Calculate residue mineralisation
             Dictionary<DateTime, double> NResidues = ResidueMineralisationModel.CalculateOutputs(simDates, meanT, config);
 
@@ -73,7 +87,7 @@ namespace SVSModel
             MineralNCalculations.DetermineFertRequirements(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults, config);
 
             //Pack Daily State Variables into a 2D array so they can be output
-            object[,] outputs = new object[simDates.Length + 1, 9];
+            object[,] outputs = new object[simDates.Length + 1, 13];
 
             outputs[0, 0] = "Date"; Functions.packRows(0, simDates, ref outputs);
             outputs[0, 1] = "SoilMineralN"; Functions.packRows(1, SoilN, ref outputs);
@@ -84,6 +98,10 @@ namespace SVSModel
             outputs[0, 6] = "CropN"; Functions.packRows(6, CropN, ref outputs);
             outputs[0, 7] = "ProductN"; Functions.packRows(7, ProductN, ref outputs);
             outputs[0, 8] = "LostN"; Functions.packRows(8, LostN, ref outputs);
+            outputs[0, 9] = "RSWC"; Functions.packRows(9, RSWC, ref outputs);
+            outputs[0, 10] = "Drainage"; Functions.packRows(10, Drainage, ref outputs);
+            outputs[0, 11] = "Irrigation"; Functions.packRows(11, Irrigation, ref outputs);
+            outputs[0, 12] = "Green cover"; Functions.packRows(12, Cover, ref outputs);
 
             return outputs;
         }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Analysis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Helper
 {
@@ -69,7 +70,7 @@ namespace Helper
                     }
                 }
             }
-            return dict;
+            return dict.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
         /// <summary>
@@ -78,14 +79,14 @@ namespace Helper
         /// <param name="date">An array of DateTimes</param>
         /// <param name="values">An array of doubles</param>
         /// <returns>dictionary converted from arr</returns>
-        public static Dictionary<DateTime, double> dictMaker(DateTime[] date, double[] values)
+        public static Dictionary<DateTime, double> dictMaker(DateTime[] dates, double[] values)
         {
             Dictionary<DateTime, double> dict = new Dictionary<DateTime, double>();
-            for (int r = 0; r < date.Length; r++)
+            for (int r = 0; r < dates.Length; r++)
             {
-                dict.Add(date[r], values[r]);
+                dict.Add(dates[r], values[r]);
             }
-            return dict;
+            return dict.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
         /// <summary>

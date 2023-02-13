@@ -14,6 +14,11 @@ namespace Helper
         public double Trigger { get; private set; }
         public double Efficiency { get; private set; }
         public int Splits { get; private set; }
+        public double AWC { get; private set; }
+        public double PrePlantRainFactor { get; private set; }
+        public double InCropRainFactor {get; private set;}
+        public double IrrigationTrigger { get; private set; }
+        public double IrrigationRefill { get; private set; }
         public Field(Dictionary<string, object> c)
         {
             InitialN = Functions.Num(c["InitialN"]);
@@ -21,6 +26,11 @@ namespace Helper
             Trigger = Functions.Num(c["Trigger"]);
             Efficiency = Functions.Num(c["Efficiency"])/100;
             Splits = int.Parse(c["Splits"].ToString());
+            AWC = Functions.Num(c["AWC"]);
+            PrePlantRainFactor = Constants.RainFactors[c["PrePlantRain"].ToString()];
+            InCropRainFactor = Constants.RainFactors[c["PrePlantRain"].ToString()];
+            IrrigationRefill = Constants.IrrigationRefull[c["Irrigation"].ToString()];
+            IrrigationTrigger = Constants.IrrigationTriggers[c["Irrigation"].ToString()];
         }
     }
 }
