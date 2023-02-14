@@ -24,7 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Data\CropCoefficientTableFull.csv" />
+    <EmbeddedResource Include="Data\CropCoefficientTableFull.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,3 @@
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.GeneratedMSBuildEditorConfig.editorconfig
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.AssemblyInfoInputs.cache
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.AssemblyInfo.cs
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.CoreCompileInputs.cache
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\SVSModel.dll
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\SVSModel.pdb
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\Apache.Arrow.dll
@@ -32,9 +28,14 @@ C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\ru\FSharp.Core.
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\tr\FSharp.Core.resources.dll
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\zh-Hans\FSharp.Core.resources.dll
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\zh-Hant\FSharp.Core.resources.dll
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.CopyComplete
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.dll
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.pdb
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.AssemblyReference.cache
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.Properties.Resources.resources
 C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.GenerateResource.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.GeneratedMSBuildEditorConfig.editorconfig
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.AssemblyInfoInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.AssemblyInfo.cs
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.CoreCompileInputs.cache
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.csproj.CopyComplete
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.dll
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8-windows\SVSModel.pdb
+C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8-windows\Data\CropCoefficientTableFull.csv
