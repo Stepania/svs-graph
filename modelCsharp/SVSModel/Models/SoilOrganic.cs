@@ -18,16 +18,31 @@ namespace SVSModel
         public static Dictionary<DateTime, double> Mineralisation(Dictionary<DateTime, double> rswc, Dictionary<DateTime, double> meanT)
         {
             DateTime[] simDates = rswc.Keys.ToArray();
-            double hweon = Config.Field.HWEON;
-            double mrc = 0.005;
-
+            double depthfactor = 30 * Config.Field.SampleDepthFactor; //Assumes all mineralisation happens in the top 30 cm but has an adjustment if sample only taken to 15 cm
+            double pmn_mgPerg = Config.Field.PMN * Config.Field.PMNconversion;
+            double pmn_kgPerha = pmn_mgPerg * Config.Field.BulkDensity * depthfactor * 0.1;
+            
             Dictionary<DateTime, double> NSoilOM = Functions.dictMaker(simDates, new double[simDates.Length]);
             foreach (DateTime d in simDates)
             {
-                double somMin = hweon * meanT[d] * rswc[d] * mrc;
+                double tempF = LloydTaylorTemp(meanT[d]);
+                double waterF = QiuBeareCurtinWater(rswc[d]);
+                double somMin = pmn_kgPerha/98 * tempF * waterF;
                 NSoilOM[d] = somMin;
             }
             return NSoilOM;
+        }
+
+        public static double LloydTaylorTemp(double t)
+        {
+            double ldt = 0.3124 * Math.Exp(308.56*(1/56.02-(1/((t+273.15)-227.13))));
+            return ldt;
+        }
+
+        public static double QiuBeareCurtinWater(double rwc)
+        {
+            double swcr = 0.57 * Math.Pow(rwc, 2) + (0.15 * rwc) + 0.33;
+            return Math.Min(swcr,1.0);
         }
     }
 }

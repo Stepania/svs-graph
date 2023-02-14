@@ -36,5 +36,8 @@ namespace Helper
         public static Dictionary<string, double> IrrigationRefull = new Dictionary<string, double>() { { "None", 0.0},
                                                               {"Some", 0.8 }, {"Full",0.9} };
 
+        /// <summary>Sample depth factor to adjust measurments to equivelent of 30cm measure</summary>
+        public static Dictionary<string, double> SampleDepthFactor = new Dictionary<string, double>() { { "0-15cm", 0.75 }, { "0-30cm", 1 } };
+
     }
 }
