@@ -1,9 +1,0 @@
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8\SVSModel.dll
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\bin\Debug\net4.8\SVSModel.pdb
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.csproj.AssemblyReference.cache
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.GeneratedMSBuildEditorConfig.editorconfig
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.AssemblyInfoInputs.cache
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.AssemblyInfo.cs
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.csproj.CoreCompileInputs.cache
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.dll
-C:\GitHubRepos\SVS\modelCsharp\SVSModel\obj\Debug\net4.8\SVSModel.pdb
