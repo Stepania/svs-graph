@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "qqSneZh8E2Cq6tq5OB3YgiY6Jzy0vzH1Fm98uRHxh2LfEQnX/vVQv4DMV0cQVSKR/7M7kNLp7jp6bkQndpuw2w==",
+  "dgSpecHash": "eyhuEDZDSviis5ZG+K8p2I8DRLUWm+03Ql8gEfWHbj+gmrCGZK30NSXd8wF8F6dqNz/ip6m2bJuswvv+hSjvpQ==",
   "success": true,
   "projectFilePath": "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
   "expectedPackageFiles": [
@@ -44,7 +44,6 @@
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.reflection.extensions\\4.3.0\\system.reflection.extensions.4.3.0.nupkg.sha512",
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.reflection.metadata\\6.0.0\\system.reflection.metadata.6.0.0.nupkg.sha512",
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.reflection.primitives\\4.3.0\\system.reflection.primitives.4.3.0.nupkg.sha512",
-    "C:\\Users\\cflhxb\\.nuget\\packages\\system.reflection.typeextensions\\4.7.0\\system.reflection.typeextensions.4.7.0.nupkg.sha512",
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.resources.resourcemanager\\4.3.0\\system.resources.resourcemanager.4.3.0.nupkg.sha512",
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.runtime\\4.3.0\\system.runtime.4.3.0.nupkg.sha512",
     "C:\\Users\\cflhxb\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",

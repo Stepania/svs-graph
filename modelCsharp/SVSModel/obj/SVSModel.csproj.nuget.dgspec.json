@@ -70,10 +70,6 @@
             "System.Reflection.MetaData": {
               "target": "Package",
               "version": "[6.0.0, )"
-            },
-            "System.Reflection.TypeExtensions": {
-              "target": "Package",
-              "version": "[4.7.0, )"
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"

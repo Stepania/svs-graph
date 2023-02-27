@@ -24,17 +24,15 @@
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
 	<PackageReference Include="System.Reflection.MetaData" Version="6.0.0" />
-	<PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />
   </ItemGroup>
   
-  <Target Name="PackedReferences" AfterTargets="AfterBuild" BeforeTargets="ExcelDnaBuild">
+ <Target Name="PackedReferences" AfterTargets="AfterBuild" BeforeTargets="ExcelDnaBuild">
     <ItemGroup>
-      <References Include="$(OutDir)*.dll" Exclude="$(OutDir)$(TargetFileName)" />
+      <References Include="$(OutDir)*.dll" Exclude="$(OutDir)$(TargetFileName)"/>
     </ItemGroup>
 
     <PropertyGroup>
       <ExcelAddInInclude>@(References)</ExcelAddInInclude>
     </PropertyGroup>
   </Target>
-
 </Project>
