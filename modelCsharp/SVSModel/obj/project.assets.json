@@ -18,90 +18,23 @@
           "lib/netstandard1.3/Apache.Arrow.dll": {}
         }
       },
-      "Deedle/3.0.0": {
+      "ExcelDna.AddIn/1.6.1-beta3": {
         "type": "package",
         "dependencies": {
-          "FSharp.Core": "4.5.2"
-        },
-        "compile": {
-          "lib/netstandard2.0/Deedle.dll": {}
-        },
-        "runtime": {
-          "lib/netstandard2.0/Deedle.dll": {}
-        }
-      },
-      "ExcelDna.AddIn/1.6.0": {
-        "type": "package",
-        "dependencies": {
-          "ExcelDna.Integration": "[1.6.0]"
+          "ExcelDna.Integration": "[1.6.1-beta3]"
         },
         "build": {
           "build/ExcelDna.AddIn.props": {},
           "build/ExcelDna.AddIn.targets": {}
         }
       },
-      "ExcelDna.Integration/1.6.0": {
+      "ExcelDna.Integration/1.6.1-beta3": {
         "type": "package",
         "compile": {
           "lib/net452/ExcelDna.Integration.dll": {}
         },
         "runtime": {
           "lib/net452/ExcelDna.Integration.dll": {}
-        }
-      },
-      "FSharp.Core/4.5.2": {
-        "type": "package",
-        "compile": {
-          "lib/net45/FSharp.Core.dll": {},
-          "lib/net45/FSharp.Core.resources.dll": {}
-        },
-        "runtime": {
-          "lib/net45/FSharp.Core.dll": {},
-          "lib/net45/FSharp.Core.resources.dll": {}
-        },
-        "resource": {
-          "lib/net45/cs/FSharp.Core.resources.dll": {
-            "locale": "cs"
-          },
-          "lib/net45/de/FSharp.Core.resources.dll": {
-            "locale": "de"
-          },
-          "lib/net45/en/FSharp.Core.resources.dll": {
-            "locale": "en"
-          },
-          "lib/net45/es/FSharp.Core.resources.dll": {
-            "locale": "es"
-          },
-          "lib/net45/fr/FSharp.Core.resources.dll": {
-            "locale": "fr"
-          },
-          "lib/net45/it/FSharp.Core.resources.dll": {
-            "locale": "it"
-          },
-          "lib/net45/ja/FSharp.Core.resources.dll": {
-            "locale": "ja"
-          },
-          "lib/net45/ko/FSharp.Core.resources.dll": {
-            "locale": "ko"
-          },
-          "lib/net45/pl/FSharp.Core.resources.dll": {
-            "locale": "pl"
-          },
-          "lib/net45/pt-BR/FSharp.Core.resources.dll": {
-            "locale": "pt-BR"
-          },
-          "lib/net45/ru/FSharp.Core.resources.dll": {
-            "locale": "ru"
-          },
-          "lib/net45/tr/FSharp.Core.resources.dll": {
-            "locale": "tr"
-          },
-          "lib/net45/zh-Hans/FSharp.Core.resources.dll": {
-            "locale": "zh-Hans"
-          },
-          "lib/net45/zh-Hant/FSharp.Core.resources.dll": {
-            "locale": "zh-Hant"
-          }
         }
       },
       "GenericParser/1.1.6": {
@@ -274,13 +207,17 @@
           "lib/net45/_._": {}
         }
       },
-      "System.Collections.Immutable/1.5.0": {
+      "System.Collections.Immutable/6.0.0": {
         "type": "package",
+        "dependencies": {
+          "System.Memory": "4.5.4",
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+        },
         "compile": {
-          "lib/netstandard2.0/System.Collections.Immutable.dll": {}
+          "lib/net461/System.Collections.Immutable.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Collections.Immutable.dll": {}
+          "lib/net461/System.Collections.Immutable.dll": {}
         }
       },
       "System.Console/4.3.0": {
@@ -463,18 +400,22 @@
           "lib/net463/System.Linq.Expressions.dll": {}
         }
       },
-      "System.Memory/4.5.3": {
+      "System.Memory/4.5.4": {
         "type": "package",
         "dependencies": {
-          "System.Buffers": "4.4.0",
-          "System.Numerics.Vectors": "4.4.0",
-          "System.Runtime.CompilerServices.Unsafe": "4.5.2"
+          "System.Buffers": "4.5.1",
+          "System.Numerics.Vectors": "4.5.0",
+          "System.Runtime.CompilerServices.Unsafe": "4.5.3"
         },
+        "frameworkAssemblies": [
+          "System",
+          "mscorlib"
+        ],
         "compile": {
-          "lib/netstandard2.0/System.Memory.dll": {}
+          "lib/net461/System.Memory.dll": {}
         },
         "runtime": {
-          "lib/netstandard2.0/System.Memory.dll": {}
+          "lib/net461/System.Memory.dll": {}
         }
       },
       "System.Net.Http/4.3.0": {
@@ -530,7 +471,7 @@
           "lib/net46/System.Net.Sockets.dll": {}
         }
       },
-      "System.Numerics.Vectors/4.4.0": {
+      "System.Numerics.Vectors/4.5.0": {
         "type": "package",
         "frameworkAssemblies": [
           "System.Numerics",
@@ -576,6 +517,18 @@
           "lib/net45/_._": {}
         }
       },
+      "System.Reflection.Metadata/6.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections.Immutable": "6.0.0"
+        },
+        "compile": {
+          "lib/net461/System.Reflection.Metadata.dll": {}
+        },
+        "runtime": {
+          "lib/net461/System.Reflection.Metadata.dll": {}
+        }
+      },
       "System.Reflection.Primitives/4.3.0": {
         "type": "package",
         "compile": {
@@ -583,6 +536,18 @@
         },
         "runtime": {
           "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.TypeExtensions/4.7.0": {
+        "type": "package",
+        "frameworkAssemblies": [
+          "mscorlib"
+        ],
+        "compile": {
+          "ref/net472/System.Reflection.TypeExtensions.dll": {}
+        },
+        "runtime": {
+          "lib/net461/System.Reflection.TypeExtensions.dll": {}
         }
       },
       "System.Resources.ResourceManager/4.3.0": {
@@ -909,24 +874,10 @@
         "lib/netstandard1.3/Apache.Arrow.dll"
       ]
     },
-    "Deedle/3.0.0": {
-      "sha512": "qYSiNngzmNvep4iCwnWM9MUc2NsR2HG+nG5HuEtqxwwJlUMNraokynArNUOZOgw2xGW/bhKKhpZ3nYAVpGyrhw==",
+    "ExcelDna.AddIn/1.6.1-beta3": {
+      "sha512": "sflkuyc000FZnyj74pnyoEy+RiTCTl4074wbOwpF221qt6obFb70RDEdlwj2DihOe6c8oN+C5ke7khA+PFTDOQ==",
       "type": "package",
-      "path": "deedle/3.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Deedle.fsx",
-        "deedle.3.0.0.nupkg.sha512",
-        "deedle.nuspec",
-        "lib/netstandard2.0/Deedle.dll",
-        "lib/netstandard2.0/Deedle.pdb"
-      ]
-    },
-    "ExcelDna.AddIn/1.6.0": {
-      "sha512": "A8fzWI++Gf6g4RQGbm5wkFu0w1Xqu7wcds/XhcLi6eELSc6Y0AuPx889V6iuC/zLAetFo9xEVOjjSc4nmJ1o8w==",
-      "type": "package",
-      "path": "exceldna.addin/1.6.0",
+      "path": "exceldna.addin/1.6.1-beta3",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -935,7 +886,7 @@
         "build/ExcelDna.AddIn.targets",
         "content/ExcelDna-Template.dna",
         "content/Properties/ExcelDna.Build.props",
-        "exceldna.addin.1.6.0.nupkg.sha512",
+        "exceldna.addin.1.6.1-beta3.nupkg.sha512",
         "exceldna.addin.nuspec",
         "images/ExcelDna-nu.png",
         "readme.txt",
@@ -944,75 +895,33 @@
         "tools/net452/ExcelDna.Integration.dll",
         "tools/net452/ExcelDna.xll",
         "tools/net452/ExcelDna64.xll",
+        "tools/net452/Microsoft.Extensions.DependencyModel.dll",
         "tools/net452/Newtonsoft.Json.dll",
         "tools/net452/install.ps1",
         "tools/net452/uninstall.ps1",
+        "tools/net6.0-windows7.0/AsmResolver.PE.File.dll",
+        "tools/net6.0-windows7.0/AsmResolver.PE.dll",
+        "tools/net6.0-windows7.0/AsmResolver.dll",
         "tools/net6.0-windows7.0/ExcelDna.AddIn.Tasks.dll",
         "tools/net6.0-windows7.0/ExcelDna.Integration.dll",
         "tools/net6.0-windows7.0/ExcelDna.xll",
         "tools/net6.0-windows7.0/ExcelDna64.xll"
       ]
     },
-    "ExcelDna.Integration/1.6.0": {
-      "sha512": "2TMP1gNW5SUrXS3xD6ZauY/I9kgJZlKTi2Fz8clb78yIaS6BJPL3/PbqBXNzeVEBJ/HxKj/8sb9CEpghn8DyVA==",
+    "ExcelDna.Integration/1.6.1-beta3": {
+      "sha512": "+zqccN42iT6lbWwYQueQi/FMG0gmQXWbD14JOJWXJbG9BseyVuUbC+SEDVAfvyJVvJrHLZqhdmndyU2+F3BmVw==",
       "type": "package",
-      "path": "exceldna.integration/1.6.0",
+      "path": "exceldna.integration/1.6.1-beta3",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "exceldna.integration.1.6.0.nupkg.sha512",
+        "exceldna.integration.1.6.1-beta3.nupkg.sha512",
         "exceldna.integration.nuspec",
         "images/ExcelDna-nu.png",
         "lib/net452/ExcelDna.Integration.dll",
-        "lib/net6.0-windows7.0/ExcelDna.Integration.dll"
-      ]
-    },
-    "FSharp.Core/4.5.2": {
-      "sha512": "apbdQOjzsjQ637kTWQuW29jqwY18jsHMyNC5A+TPJZKFEIE2cIfQWf3V7+mXrxlbX69BueYkv293/g70wuXuRw==",
-      "type": "package",
-      "path": "fsharp.core/4.5.2",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "fsharp.core.4.5.2.nupkg.sha512",
-        "fsharp.core.nuspec",
-        "lib/net45/FSharp.Core.dll",
-        "lib/net45/FSharp.Core.optdata",
-        "lib/net45/FSharp.Core.resources.dll",
-        "lib/net45/FSharp.Core.sigdata",
-        "lib/net45/FSharp.Core.xml",
-        "lib/net45/cs/FSharp.Core.resources.dll",
-        "lib/net45/de/FSharp.Core.resources.dll",
-        "lib/net45/en/FSharp.Core.resources.dll",
-        "lib/net45/es/FSharp.Core.resources.dll",
-        "lib/net45/fr/FSharp.Core.resources.dll",
-        "lib/net45/it/FSharp.Core.resources.dll",
-        "lib/net45/ja/FSharp.Core.resources.dll",
-        "lib/net45/ko/FSharp.Core.resources.dll",
-        "lib/net45/pl/FSharp.Core.resources.dll",
-        "lib/net45/pt-BR/FSharp.Core.resources.dll",
-        "lib/net45/ru/FSharp.Core.resources.dll",
-        "lib/net45/tr/FSharp.Core.resources.dll",
-        "lib/net45/zh-Hans/FSharp.Core.resources.dll",
-        "lib/net45/zh-Hant/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/FSharp.Core.dll",
-        "lib/netstandard1.6/FSharp.Core.optdata",
-        "lib/netstandard1.6/FSharp.Core.sigdata",
-        "lib/netstandard1.6/FSharp.Core.xml",
-        "lib/netstandard1.6/cs/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/de/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/en/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/es/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/fr/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/it/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/ja/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/ko/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/pl/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/pt-BR/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/ru/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/tr/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/zh-Hans/FSharp.Core.resources.dll",
-        "lib/netstandard1.6/zh-Hant/FSharp.Core.resources.dll"
+        "lib/net452/ExcelDna.Integration.xml",
+        "lib/net6.0-windows7.0/ExcelDna.Integration.dll",
+        "lib/net6.0-windows7.0/ExcelDna.Integration.xml"
       ]
     },
     "GenericParser/1.1.6": {
@@ -1741,27 +1650,27 @@
         "system.collections.concurrent.nuspec"
       ]
     },
-    "System.Collections.Immutable/1.5.0": {
-      "sha512": "EXKiDFsChZW0RjrZ4FYHu9aW6+P4MCgEDCklsVseRfhoO0F+dXeMSsMRAlVXIo06kGJ/zv+2w1a2uc2+kxxSaQ==",
+    "System.Collections.Immutable/6.0.0": {
+      "sha512": "l4zZJ1WU2hqpQQHXz1rvC3etVZN+2DLmQMO79FhOTZHMn8tDRr+WU287sbomD0BETlmKDn0ygUgVy9k5xkkJdA==",
       "type": "package",
-      "path": "system.collections.immutable/1.5.0",
+      "path": "system.collections.immutable/6.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
+        "Icon.png",
         "LICENSE.TXT",
         "THIRD-PARTY-NOTICES.TXT",
-        "lib/netstandard1.0/System.Collections.Immutable.dll",
-        "lib/netstandard1.0/System.Collections.Immutable.xml",
-        "lib/netstandard1.3/System.Collections.Immutable.dll",
-        "lib/netstandard1.3/System.Collections.Immutable.xml",
+        "buildTransitive/netcoreapp2.0/System.Collections.Immutable.targets",
+        "buildTransitive/netcoreapp3.1/_._",
+        "lib/net461/System.Collections.Immutable.dll",
+        "lib/net461/System.Collections.Immutable.xml",
+        "lib/net6.0/System.Collections.Immutable.dll",
+        "lib/net6.0/System.Collections.Immutable.xml",
         "lib/netstandard2.0/System.Collections.Immutable.dll",
         "lib/netstandard2.0/System.Collections.Immutable.xml",
-        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
-        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml",
-        "system.collections.immutable.1.5.0.nupkg.sha512",
+        "system.collections.immutable.6.0.0.nupkg.sha512",
         "system.collections.immutable.nuspec",
-        "useSharedDesignerContext.txt",
-        "version.txt"
+        "useSharedDesignerContext.txt"
       ]
     },
     "System.Console/4.3.0": {
@@ -2567,22 +2476,24 @@
         "system.linq.expressions.nuspec"
       ]
     },
-    "System.Memory/4.5.3": {
-      "sha512": "3oDzvc/zzetpTKWMShs1AADwZjQ/36HnsufHRPcOjyRAAMLDlu2iD33MBI2opxnezcVUtXyqDXXjoFMOU9c7SA==",
+    "System.Memory/4.5.4": {
+      "sha512": "1MbJTHS1lZ4bS4FmsJjnuGJOu88ZzTT2rLvrhW7Ygic+pC0NWA+3hgAen0HRdsocuQXCkUTdFn9yHJJhsijDXw==",
       "type": "package",
-      "path": "system.memory/4.5.3",
+      "path": "system.memory/4.5.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.TXT",
         "THIRD-PARTY-NOTICES.TXT",
+        "lib/net461/System.Memory.dll",
+        "lib/net461/System.Memory.xml",
         "lib/netcoreapp2.1/_._",
         "lib/netstandard1.1/System.Memory.dll",
         "lib/netstandard1.1/System.Memory.xml",
         "lib/netstandard2.0/System.Memory.dll",
         "lib/netstandard2.0/System.Memory.xml",
         "ref/netcoreapp2.1/_._",
-        "system.memory.4.5.3.nupkg.sha512",
+        "system.memory.4.5.4.nupkg.sha512",
         "system.memory.nuspec",
         "useSharedDesignerContext.txt",
         "version.txt"
@@ -2787,10 +2698,10 @@
         "system.net.sockets.nuspec"
       ]
     },
-    "System.Numerics.Vectors/4.4.0": {
-      "sha512": "UiLzLW+Lw6HLed1Hcg+8jSRttrbuXv7DANVj0DkL9g6EnnzbL75EB7EWsw5uRbhxd/4YdG8li5XizGWepmG3PQ==",
+    "System.Numerics.Vectors/4.5.0": {
+      "sha512": "QQTlPTl06J/iiDbJCiepZ4H//BVraReU4O4EoRw1U02H5TLUIT7xn3GnDp9AXPSlJUDyFs4uWjWafNX6WrAojQ==",
       "type": "package",
-      "path": "system.numerics.vectors/4.4.0",
+      "path": "system.numerics.vectors/4.5.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2807,12 +2718,15 @@
         "lib/netstandard2.0/System.Numerics.Vectors.xml",
         "lib/portable-net45+win8+wp8+wpa81/System.Numerics.Vectors.dll",
         "lib/portable-net45+win8+wp8+wpa81/System.Numerics.Vectors.xml",
+        "lib/uap10.0.16299/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "lib/xamarintvos10/_._",
         "lib/xamarinwatchos10/_._",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
+        "ref/net45/System.Numerics.Vectors.dll",
+        "ref/net45/System.Numerics.Vectors.xml",
         "ref/net46/System.Numerics.Vectors.dll",
         "ref/net46/System.Numerics.Vectors.xml",
         "ref/netcoreapp2.0/_._",
@@ -2820,11 +2734,12 @@
         "ref/netstandard1.0/System.Numerics.Vectors.xml",
         "ref/netstandard2.0/System.Numerics.Vectors.dll",
         "ref/netstandard2.0/System.Numerics.Vectors.xml",
+        "ref/uap10.0.16299/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "ref/xamarintvos10/_._",
         "ref/xamarinwatchos10/_._",
-        "system.numerics.vectors.4.4.0.nupkg.sha512",
+        "system.numerics.vectors.4.5.0.nupkg.sha512",
         "system.numerics.vectors.nuspec",
         "useSharedDesignerContext.txt",
         "version.txt"
@@ -3038,6 +2953,29 @@
         "system.reflection.extensions.nuspec"
       ]
     },
+    "System.Reflection.Metadata/6.0.0": {
+      "sha512": "sffDOcex1C3HO5kDolOYcWXTwRpZY/LvJujM6SMjn63fWMJWchYAAmkoAJXlbpZ5yf4d+KMgxd+LeETa4gD9sQ==",
+      "type": "package",
+      "path": "system.reflection.metadata/6.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/netcoreapp2.0/System.Reflection.Metadata.targets",
+        "buildTransitive/netcoreapp3.1/_._",
+        "lib/net461/System.Reflection.Metadata.dll",
+        "lib/net461/System.Reflection.Metadata.xml",
+        "lib/net6.0/System.Reflection.Metadata.dll",
+        "lib/net6.0/System.Reflection.Metadata.xml",
+        "lib/netstandard2.0/System.Reflection.Metadata.dll",
+        "lib/netstandard2.0/System.Reflection.Metadata.xml",
+        "system.reflection.metadata.6.0.0.nupkg.sha512",
+        "system.reflection.metadata.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
     "System.Reflection.Primitives/4.3.0": {
       "sha512": "5RXItQz5As4xN2/YUDxdpsEkMhvw3e6aNveFXUn4Hl/udNTCNhnKp8lT9fnc3MhvGKh1baak5CovpuQUXHAlIA==",
       "type": "package",
@@ -3093,6 +3031,79 @@
         "ref/xamarinwatchos10/_._",
         "system.reflection.primitives.4.3.0.nupkg.sha512",
         "system.reflection.primitives.nuspec"
+      ]
+    },
+    "System.Reflection.TypeExtensions/4.7.0": {
+      "sha512": "VybpaOQQhqE6siHppMktjfGBw1GCwvCqiufqmP8F1nj7fTUNtW35LOEt3UZTEsECfo+ELAl/9o9nJx3U91i7vA==",
+      "type": "package",
+      "path": "system.reflection.typeextensions/4.7.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Reflection.TypeExtensions.dll",
+        "lib/net461/System.Reflection.TypeExtensions.dll",
+        "lib/net461/System.Reflection.TypeExtensions.xml",
+        "lib/netcore50/System.Reflection.TypeExtensions.dll",
+        "lib/netcoreapp1.0/System.Reflection.TypeExtensions.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.3/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard1.3/System.Reflection.TypeExtensions.xml",
+        "lib/netstandard1.5/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard1.5/System.Reflection.TypeExtensions.xml",
+        "lib/netstandard2.0/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard2.0/System.Reflection.TypeExtensions.xml",
+        "lib/uap10.0.16299/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Reflection.TypeExtensions.dll",
+        "ref/net461/System.Reflection.TypeExtensions.dll",
+        "ref/net461/System.Reflection.TypeExtensions.xml",
+        "ref/net472/System.Reflection.TypeExtensions.dll",
+        "ref/net472/System.Reflection.TypeExtensions.xml",
+        "ref/netcoreapp2.0/_._",
+        "ref/netstandard1.3/System.Reflection.TypeExtensions.dll",
+        "ref/netstandard1.3/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/de/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/es/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/fr/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/it/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/ja/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/ko/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/ru/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/zh-hans/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.3/zh-hant/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/System.Reflection.TypeExtensions.dll",
+        "ref/netstandard1.5/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/de/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/es/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/fr/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/it/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/ja/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/ko/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/ru/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/zh-hans/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard1.5/zh-hant/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard2.0/System.Reflection.TypeExtensions.dll",
+        "ref/netstandard2.0/System.Reflection.TypeExtensions.xml",
+        "ref/uap10.0.16299/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll",
+        "runtimes/aot/lib/uap10.0.16299/_._",
+        "system.reflection.typeextensions.4.7.0.nupkg.sha512",
+        "system.reflection.typeextensions.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
       ]
     },
     "System.Resources.ResourceManager/4.3.0": {
@@ -4334,13 +4345,13 @@
   },
   "projectFileDependencyGroups": {
     ".NETFramework,Version=v4.8": [
-      "Deedle >= 3.0.0",
-      "ExcelDna.AddIn >= 1.6.0",
-      "ExcelDna.Integration >= 1.6.0",
+      "ExcelDna.AddIn >= 1.6.1-beta3",
       "GenericParser >= 1.1.6",
       "Microsoft.Data.Analysis >= 0.20.0",
       "Microsoft.NETFramework.ReferenceAssemblies >= 1.0.3",
-      "Microsoft.NETFramework.ReferenceAssemblies.net48 >= 1.0.3"
+      "Microsoft.NETFramework.ReferenceAssemblies.net48 >= 1.0.3",
+      "System.Reflection.MetaData >= 6.0.0",
+      "System.Reflection.TypeExtensions >= 4.7.0"
     ]
   },
   "packageFolders": {
@@ -4372,7 +4383,7 @@
       },
       "frameworks": {
         "net48": {
-          "targetAlias": "net4.8-windows",
+          "targetAlias": "net48",
           "projectReferences": {}
         }
       },
@@ -4384,19 +4395,11 @@
     },
     "frameworks": {
       "net48": {
-        "targetAlias": "net4.8-windows",
+        "targetAlias": "net48",
         "dependencies": {
-          "Deedle": {
-            "target": "Package",
-            "version": "[3.0.0, )"
-          },
           "ExcelDna.AddIn": {
             "target": "Package",
-            "version": "[1.6.0, )"
-          },
-          "ExcelDna.Integration": {
-            "target": "Package",
-            "version": "[1.6.0, )"
+            "version": "[1.6.1-beta3, )"
           },
           "GenericParser": {
             "target": "Package",
@@ -4417,6 +4420,14 @@
             "suppressParent": "All",
             "target": "Package",
             "version": "[1.0.3, )"
+          },
+          "System.Reflection.MetaData": {
+            "target": "Package",
+            "version": "[6.0.0, )"
+          },
+          "System.Reflection.TypeExtensions": {
+            "target": "Package",
+            "version": "[4.7.0, )"
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"

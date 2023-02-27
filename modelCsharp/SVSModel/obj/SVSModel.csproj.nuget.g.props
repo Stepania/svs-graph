@@ -17,9 +17,9 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Import Project="$(NuGetPackageRoot)exceldna.addin\1.6.0\build\ExcelDna.AddIn.props" Condition="Exists('$(NuGetPackageRoot)exceldna.addin\1.6.0\build\ExcelDna.AddIn.props')" />
+    <Import Project="$(NuGetPackageRoot)exceldna.addin\1.6.1-beta3\build\ExcelDna.AddIn.props" Condition="Exists('$(NuGetPackageRoot)exceldna.addin\1.6.1-beta3\build\ExcelDna.AddIn.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgExcelDna_AddIn Condition=" '$(PkgExcelDna_AddIn)' == '' ">C:\Users\cflhxb\.nuget\packages\exceldna.addin\1.6.0</PkgExcelDna_AddIn>
+    <PkgExcelDna_AddIn Condition=" '$(PkgExcelDna_AddIn)' == '' ">C:\Users\cflhxb\.nuget\packages\exceldna.addin\1.6.1-beta3</PkgExcelDna_AddIn>
   </PropertyGroup>
 </Project>

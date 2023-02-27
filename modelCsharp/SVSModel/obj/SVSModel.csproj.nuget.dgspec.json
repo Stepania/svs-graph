@@ -29,7 +29,7 @@
         },
         "frameworks": {
           "net48": {
-            "targetAlias": "net4.8-windows",
+            "targetAlias": "net48",
             "projectReferences": {}
           }
         },
@@ -41,19 +41,11 @@
       },
       "frameworks": {
         "net48": {
-          "targetAlias": "net4.8-windows",
+          "targetAlias": "net48",
           "dependencies": {
-            "Deedle": {
-              "target": "Package",
-              "version": "[3.0.0, )"
-            },
             "ExcelDna.AddIn": {
               "target": "Package",
-              "version": "[1.6.0, )"
-            },
-            "ExcelDna.Integration": {
-              "target": "Package",
-              "version": "[1.6.0, )"
+              "version": "[1.6.1-beta3, )"
             },
             "GenericParser": {
               "target": "Package",
@@ -74,6 +66,14 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[1.0.3, )"
+            },
+            "System.Reflection.MetaData": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "System.Reflection.TypeExtensions": {
+              "target": "Package",
+              "version": "[4.7.0, )"
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"
