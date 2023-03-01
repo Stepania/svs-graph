@@ -13,20 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ExcelDna.AddIn" Version="1.6.1-beta3" />
+    <PackageReference Include="ExcelDna.AddIn" Version="1.7.0-rc1" />
     <PackageReference Include="GenericParser" Version="1.1.6" />
     <PackageReference Include="Microsoft.Data.Analysis" Version="0.20.0" />
-	<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all">
-	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	</PackageReference>
-	<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3">
-	  <PrivateAssets>all</PrivateAssets>
-	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	</PackageReference>
-	<PackageReference Include="System.Reflection.MetaData" Version="6.0.0" />
   </ItemGroup>
   
- <Target Name="PackedReferences" AfterTargets="AfterBuild" BeforeTargets="ExcelDnaBuild">
+  <Target Name="PackedReferences" AfterTargets="AfterBuild" BeforeTargets="ExcelDnaBuild">
     <ItemGroup>
       <References Include="$(OutDir)*.dll" Exclude="$(OutDir)$(TargetFileName)"/>
     </ItemGroup>
@@ -35,4 +27,5 @@
       <ExcelAddInInclude>@(References)</ExcelAddInInclude>
     </PropertyGroup>
   </Target>
+  
 </Project>

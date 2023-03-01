@@ -45,7 +45,7 @@
           "dependencies": {
             "ExcelDna.AddIn": {
               "target": "Package",
-              "version": "[1.6.1-beta3, )"
+              "version": "[1.7.0-rc1, )"
             },
             "GenericParser": {
               "target": "Package",
@@ -54,22 +54,6 @@
             "Microsoft.Data.Analysis": {
               "target": "Package",
               "version": "[0.20.0, )"
-            },
-            "Microsoft.NETFramework.ReferenceAssemblies": {
-              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[1.0.3, )"
-            },
-            "Microsoft.NETFramework.ReferenceAssemblies.net48": {
-              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[1.0.3, )"
-            },
-            "System.Reflection.MetaData": {
-              "target": "Package",
-              "version": "[6.0.0, )"
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"

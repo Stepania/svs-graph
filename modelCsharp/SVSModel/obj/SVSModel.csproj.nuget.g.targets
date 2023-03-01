@@ -4,7 +4,6 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Import Project="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net48\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net48.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net48\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net48.targets')" />
-    <Import Project="$(NuGetPackageRoot)exceldna.addin\1.6.1-beta3\build\ExcelDna.AddIn.targets" Condition="Exists('$(NuGetPackageRoot)exceldna.addin\1.6.1-beta3\build\ExcelDna.AddIn.targets')" />
+    <Import Project="$(NuGetPackageRoot)exceldna.addin\1.7.0-rc1\build\ExcelDna.AddIn.targets" Condition="Exists('$(NuGetPackageRoot)exceldna.addin\1.7.0-rc1\build\ExcelDna.AddIn.targets')" />
   </ImportGroup>
 </Project>
