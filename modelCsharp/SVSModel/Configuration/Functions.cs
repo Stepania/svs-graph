@@ -1,9 +1,9 @@
-﻿using Microsoft.Data.Analysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Data.Analysis;
 
-namespace Helper
+namespace SVSModel.Configuration
 {
     public class Functions
     {
@@ -58,10 +58,9 @@ namespace Helper
                 {
                     for (int r = 1; r < Nrows; r++)
                     {
-                        if ((arr[r, 0].GetType() == typeof(ExcelDna.Integration.ExcelEmpty)) || 
-                            (arr[r, c].GetType() == typeof(ExcelDna.Integration.ExcelEmpty)))
+                        if ((arr[r, 0] == null) || (arr[r, c] == null))
                         { }
-                        else if ((arr[r, 0].ToString() == "")|| (arr[r, c].ToString() == ""))
+                        else if ((arr[r, 0].ToString() == "") || (arr[r, c].ToString() == ""))
                         { }
                         else
                         {
@@ -149,7 +148,7 @@ namespace Helper
         /// <param name="df">the 2D array that the column is to be packed into</param>
         public static object[,] packDataFrame(DataFrame DF)
         {
-            int rows = (int)DF.Rows.Count+2;
+            int rows = (int)DF.Rows.Count + 2;
             int cols = (int)DF.Columns.Count;
             object[,] df = new object[rows, cols];
             for (int r = 0; r < rows; r++)
@@ -166,7 +165,7 @@ namespace Helper
                     }
                     else
                     {
-                        df[r, c] = DF[r-2, c];
+                        df[r, c] = DF[r - 2, c];
                     }
                 }
             }
@@ -237,9 +236,7 @@ namespace Helper
             {
                 if (arr[r, 1].ToString() == "")
                     errorlist.Add(arr[r, 0].ToString());
-                if (arr[r, 1].GetType() == typeof(ExcelDna.Integration.ExcelError))
-                    errorlist.Add(arr[r,0].ToString());
-                if (arr[r, 1].GetType() == typeof(ExcelDna.Integration.ExcelEmpty))
+                if (arr[r, 1] == null)
                     errorlist.Add(arr[r, 0].ToString());
             }
             return errorlist;
@@ -258,7 +255,7 @@ namespace Helper
         }
         public static double Num(object configDouble)
         {
-            
+
             return Double.Parse(configDouble.ToString());
         }
     }

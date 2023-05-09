@@ -1,35 +1,36 @@
 {
   "format": 1,
   "restore": {
-    "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj": {}
+    "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj": {}
   },
   "projects": {
-    "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj": {
-      "version": "1.0.0",
+    "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj": {
+      "version": "1.0.11",
       "restore": {
-        "projectUniqueName": "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
+        "projectUniqueName": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
         "projectName": "SVSModel",
-        "projectPath": "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
-        "packagesPath": "C:\\Users\\cflhxb\\.nuget\\packages\\",
-        "outputPath": "C:\\GitHubRepos\\SVS\\modelCsharp\\SVSModel\\obj\\",
+        "projectPath": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
+        "packagesPath": "C:\\Users\\millerT\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
         ],
         "configFilePaths": [
-          "C:\\Users\\cflhxb\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\NuGet.Config",
+          "C:\\Users\\millerT\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net48"
+          "netstandard2.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {},
+          "https://pkgs.dev.azure.com/rezaresystems/48ae16c6-5f20-44a0-ad41-e047c311de0a/_packaging/svs-model-calculator/nuget/v3/index.json": {}
         },
         "frameworks": {
-          "net48": {
-            "targetAlias": "net48",
+          "netstandard2.0": {
+            "targetAlias": "netstandard2.0",
             "projectReferences": {}
           }
         },
@@ -40,23 +41,36 @@
         }
       },
       "frameworks": {
-        "net48": {
-          "targetAlias": "net48",
+        "netstandard2.0": {
+          "targetAlias": "netstandard2.0",
           "dependencies": {
-            "ExcelDna.AddIn": {
+            "CsvHelper": {
               "target": "Package",
-              "version": "[1.7.0-rc1, )"
-            },
-            "GenericParser": {
-              "target": "Package",
-              "version": "[1.1.6, )"
+              "version": "[30.0.1, )"
             },
             "Microsoft.Data.Analysis": {
               "target": "Package",
               "version": "[0.20.0, )"
+            },
+            "NETStandard.Library": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.0.3, )",
+              "autoReferenced": true
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
         }
       }
     }

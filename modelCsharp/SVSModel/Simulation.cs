@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Helper;
+using SVSModel.Configuration;
+using SVSModel.Models;
 
 namespace SVSModel
 {
-    class Simulation
+    public class Simulation
     {
         /// <summary>
         /// Function that steps through each of the components of the N balance for a crop rotation and returns the results in 2D array format
@@ -19,20 +20,19 @@ namespace SVSModel
         public static object[,] SimulateField(Dictionary<DateTime, double> meanT,
                                                       Dictionary<DateTime, double> meanRain,
                                                       Dictionary<DateTime, double> meanPET,
-                                                      Dictionary<DateTime, double> testResults, 
-                                                      Dictionary<DateTime, double> nAapplied,
-                                                      Dictionary<string, object> config)
+                                                      Dictionary<DateTime, double> testResults,
+                                                       Dictionary<DateTime, double> nAapplied,
+                                                      Config config)
         {
-            Config.Initialise(config);
-            DateTime[] simDates = Functions.DateSeries(Config.Prior.HarvestDate.AddDays(-1), Config.Following.HarvestDate);
+            DateTime[] simDates = Functions.DateSeries(config.Prior.HarvestDate.AddDays(-1), config.Following.HarvestDate);
 
             //Run crop model for each crop in rotation to calculate CropN (total standing in in crop) and Nuptake (Daily N removal from the soil by the crop)
             Dictionary<DateTime, double> NUptake = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> CropN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> ProductN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> Cover = Functions.dictMaker(simDates, new double[simDates.Length]);
-            
-            foreach (CropConfig crop in Config.Rotation) //Step through each crop position
+
+            foreach (CropConfig crop in config.Rotation) //Step through each crop position
             {
                 //Make date series for duraion of the crop and accumulate thermal time over that period
                 DateTime[] cropDates = Functions.DateSeries(crop.EstablishDate, crop.HarvestDate);
@@ -68,27 +68,27 @@ namespace SVSModel
             Dictionary<DateTime, double> RSWC = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> Drainage = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> Irrigation = Functions.dictMaker(simDates, new double[simDates.Length]);
-            SoilWater.Balance(ref RSWC, ref Drainage, ref Irrigation, meanRain, meanPET, Cover);
-            
+            SoilWater.Balance(ref RSWC, ref Drainage, ref Irrigation, meanRain, meanPET, Cover, config);
+
             // Calculate residue mineralisation
-            Dictionary<DateTime, double> NResidues = Residues.Mineralisation(RSWC, meanT);
+            Dictionary<DateTime, double> NResidues = Residues.Mineralisation(RSWC, meanT, config);
 
             // Calculate soil OM mineralisation
-            Dictionary<DateTime, double> NSoilOM = SoilOrganic.Mineralisation(RSWC, meanT);
+            Dictionary<DateTime, double> NSoilOM = SoilOrganic.Mineralisation(RSWC, meanT, config);
 
             //Calculate soil N estimated without fertiliser or soil test results
-            Dictionary<DateTime, double> SoilN = SoilNitrogen.InitialBalance(NUptake, NResidues, NSoilOM);
+            Dictionary<DateTime, double> SoilN = SoilNitrogen.InitialBalance(NUptake, NResidues, NSoilOM, config);
 
             //Add fertiliser that has already been applied to the N balance
             Dictionary<DateTime, double> LostN = Functions.dictMaker(simDates, new double[simDates.Length]);
             Dictionary<DateTime, double> FertiliserN = Functions.dictMaker(simDates, new double[simDates.Length]);
-            Fertiliser.ApplyExistingFertiliser(ref FertiliserN, ref SoilN, ref LostN, nAapplied);
+            Fertiliser.ApplyExistingFertiliser(ref FertiliserN, ref SoilN, ref LostN, nAapplied, config);
 
             //Reset soil N with test valaues
             SoilNitrogen.TestCorrection(testResults, ref SoilN);
 
             //Calculate Fertiliser requirements and add into soil N
-            Fertiliser.RemainingFertiliserSchedule(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults);
+            Fertiliser.RemainingFertiliserSchedule(ref FertiliserN, ref SoilN, ref LostN, NResidues, NSoilOM, CropN, testResults, config);
 
             //Pack Daily State Variables into a 2D array so they can be output
             object[,] outputs = new object[simDates.Length + 1, 13];

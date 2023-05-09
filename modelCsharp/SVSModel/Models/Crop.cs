@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Helper;
 using Microsoft.Data.Analysis;
+using SVSModel.Configuration;
 
 namespace SVSModel
 {
@@ -16,14 +16,14 @@ namespace SVSModel
         /// <param name="tt">An array containing the accumulated thermal time for the duration of the crop</param>
         /// <param name="cf">A specific class that holds all the simulation configuration data in the correct types for use in the model</param>
         /// <returns>A 2D array of crop model outputs</returns>
-        public static object[,] Grow(Dictionary<DateTime, double> tt, 
+        public static object[,] Grow(Dictionary<DateTime, double> tt,
                                      CropConfig cf)
         {
             ///Set up data structures
             DateTime[] cropDates = Functions.DateSeries(cf.EstablishDate, cf.HarvestDate);
             DataFrame allCropParams = Crop.LoadCropCoefficients();
             CropParams cropParams = ExtractCropParams(cf.CropNameFull, allCropParams);// new Dictionary<string, double>();
-   
+
             // Derive Crop Parameters
             double Tt_Harv = tt.Values.Last();
             double Tt_estab = Tt_Harv * (Constants.PropnTt[cf.EstablishStage] / Constants.PropnTt[cf.HarvestStage]);
@@ -139,7 +139,7 @@ namespace SVSModel
             {
                 cropParamDict.Add(c, allCropParams[c][cropRow]);
             }
-            
+
             CropParams cropParams = new CropParams(cropParamDict);
             return cropParams;
         }
