@@ -2675,17 +2675,17 @@
   "project": {
     "version": "1.0.11",
     "restore": {
-      "projectUniqueName": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
+      "projectUniqueName": "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\SVSModel.csproj",
       "projectName": "SVSModel",
-      "projectPath": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
+      "projectPath": "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\SVSModel.csproj",
       "packagesPath": "C:\\Users\\millerT\\.nuget\\packages\\",
-      "outputPath": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\obj\\",
+      "outputPath": "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\NuGet.Config",
+        "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\NuGet.Config",
         "C:\\Users\\millerT\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],

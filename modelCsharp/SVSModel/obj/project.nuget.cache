@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "CzlaFNnevDdy1BFha8USIcUD1U/ngZVm2oR9JlhjKKsMfPQJsIkKYiBUirwzvJ7be1o7LyqlFWRA0M65vN0KsQ==",
+  "dgSpecHash": "Ccsurzz+gZnsbUPl4jNcHxISCs14eQiF0BzlTAZe0T4puG2PRerqjfJ9hzNXwsFi6PVCadU+x46in3E7eZdt1w==",
   "success": true,
-  "projectFilePath": "C:\\Projects\\SVS\\SVS\\modelCsharp\\SVSModel\\SVSModel.csproj",
+  "projectFilePath": "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\SVSModel.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\millerT\\.nuget\\packages\\apache.arrow\\2.0.0\\apache.arrow.2.0.0.nupkg.sha512",
     "C:\\Users\\millerT\\.nuget\\packages\\csvhelper\\30.0.1\\csvhelper.30.0.1.nupkg.sha512",
