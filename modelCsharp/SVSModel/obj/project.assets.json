@@ -2673,7 +2673,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
-    "version": "1.0.11",
+    "version": "1.0.12",
     "restore": {
       "projectUniqueName": "C:\\Projects\\SVS\\SVS-Model\\modelCsharp\\SVSModel\\SVSModel.csproj",
       "projectName": "SVSModel",
