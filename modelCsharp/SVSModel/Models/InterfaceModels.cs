@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CsvHelper.Configuration;
 
 namespace SVSModel.Models
 {
@@ -40,6 +41,46 @@ namespace SVSModel.Models
         public double ProductN { get; set; }
     }
 
+    public sealed class CropCoefficientMap : ClassMap<CropCoefficient>
+    {
+        public CropCoefficientMap()
+        {
+            Map(c => c.UniqueName).Name("UniqueName");
+            Map(c => c.Index).Name("Index").Default(0);
+            Map(c => c.EndUse).Name("EndUse");
+            Map(c => c.Group).Name("Group");
+            Map(c => c.ColloquialName).Name("Colloquial Name");
+            Map(c => c.Type).Name("Type");
+            Map(c => c.Family).Name("Family");
+            Map(c => c.Genus).Name("Genus");
+            Map(c => c.SpecificEpithet).Name("Specific epithet");
+            Map(c => c.SubSpecies).Name("Sub species");
+            Map(c => c.SpeciesName).Name("Species name");
+            Map(c => c.EpithetAndSubSpecies).Name("Epithet and sub species");
+            Map(c => c.TypicalEstablishStage).Name("Typical Establish Stage");
+            Map(c => c.TypicalEstablishMonth).Name("Typical Establish month");
+            Map(c => c.TypicalHarvestStage).Name("Typical Harvest Stage");
+            Map(c => c.TypicalHarvestMonth).Name("Typical Harvest month");
+            Map(c => c.TypicalYield).Name("Typical Yield").Default(0);
+            Map(c => c.TypicalYieldUnits).Name("Typical Yield Units");
+            Map(c => c.YieldType).Name("Yield type");
+            Map(c => c.TypicalPopulationPerHa).Name("Typical Population (/ha)").Default(0);
+            Map(c => c.TotalOrDry).Name("TotalOrDry");
+            Map(c => c.TypicalDressingLossPercent).Name("Typical Dressing Loss %").Default(0);
+            Map(c => c.TypicalFieldLossPercent).Name("Typical Field Loss %").Default(0);
+            Map(c => c.TypicalHI).Name("Typical HI").Default(0);
+            Map(c => c.HIRange).Name("HI Range").Default(0);
+            Map(c => c.MoisturePercent).Name("Moisture %").Default(0);
+            Map(c => c.PRoot).Name("P Root").Default(0);
+            Map(c => c.MaxRD).Name("Max RD").Default(0);
+            Map(c => c.ACover).Name("A cover").Default(0);
+            Map(c => c.RCover).Name("rCover").Default(0);
+            Map(c => c.RootN).Name("Root [N]").Default(0);
+            Map(c => c.StOverN).Name("Stover [N]").Default(0);
+            Map(c => c.ProductN).Name("Product [N]").Default(0);
+        }
+    }
+
     public class WeatherStationData
     {
         public int DOY { get; set; }
@@ -53,5 +94,22 @@ namespace SVSModel.Models
         public Dictionary<DateTime, double> MeanT { get; set; }
         public Dictionary<DateTime, double> Rain { get; set; }
         public Dictionary<DateTime, double> MeanPET { get; set; }
+    }
+
+    public class DailyNBalance
+    {
+        public DateTime Date { get; set; }
+        public double SoilMineralN { get; set; }
+        public double UptakeN { get; set; }
+        public double ResidueN { get; set; }
+        public double SoilOMN { get; set; }
+        public double FertiliserN { get; set; }
+        public double CropN { get; set; }
+        public double ProductN { get; set; }
+        public double LostN { get; set; }
+        public double RSWC { get; set; }
+        public double Drainage { get; set; }
+        public double Irrigation { get; set; }
+        public double GreenCover { get; set; }
     }
 }

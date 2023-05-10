@@ -14,19 +14,19 @@ namespace SVSModel
     public interface IModelInterface
     {
         /// <summary>
-        /// 
+        /// User friendly interface for calling SimulateField
         /// </summary>
-        /// <param name="weatherStation"></param>
-        /// <param name="testResults"></param>
-        /// <param name="nApplied"></param>
-        /// <param name="config"></param>
-        /// <returns></returns>
-        object[,] GetDailyNBalance(string weatherStation, Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nApplied, Config config);
+        /// <param name="weatherStation">A string representing the closest weather station 'gore' | 'hastings' | 'levin' | 'lincoln' | 'pukekohe'</param>
+        /// <param name="testResults">A dictionary of nitrogen test results</param>
+        /// <param name="nApplied">A dictionary of nitrogen applications</param>
+        /// <param name="config">Model config object, all parameters are required</param>
+        /// <returns>A list of <see cref="DailyNBalance"/> objects</returns>
+        List<DailyNBalance> GetDailyNBalance(string weatherStation, Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nApplied, Config config);
 
         /// <summary>
         /// Gets the crop data from the data file
         /// </summary>
-        /// <returns>List of <see cref="InterfaceModels"/>s directly from the data file</returns>
+        /// <returns>List of <see cref="CropCoefficient"/>s directly from the data file</returns>
         IEnumerable<CropCoefficient> GetCropCoefficients();
 
         object[,] GetDailyCropData(double[] Tt, object[,] Config);
@@ -34,13 +34,46 @@ namespace SVSModel
 
     public class ModelInterface : IModelInterface
     {
-        public object[,] GetDailyNBalance(string weatherStation, Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nApplied, Config config)
+        public List<DailyNBalance> GetDailyNBalance(string weatherStation, Dictionary<DateTime, double> testResults, Dictionary<DateTime, double> nApplied, Config config)
         {
             var startDate = config.Prior.EstablishDate.AddDays(-1);
             var endDate = config.Following.HarvestDate.AddDays(2);
             var metData = BuildMetDataDictionaries(startDate, endDate, weatherStation);
 
-            return Simulation.SimulateField(metData.MeanT, metData.Rain, metData.MeanPET, testResults, nApplied, config);
+            var rawResult = Simulation.SimulateField(metData.MeanT, metData.Rain, metData.MeanPET, testResults, nApplied, config);
+
+            var result = new List<DailyNBalance>();
+
+            // Convert from the 2d object array that SimulateField returns into something user friendly
+            for (var r = 1; r < rawResult.GetLength(0); r++)
+            {
+                var row = Enumerable.Range(0, rawResult.GetLength(1))
+                    .Select(x => rawResult[r, x])
+                    .ToList();
+
+                var values = row.Skip(1).OfType<double>().ToArray();
+
+                var data = new DailyNBalance
+                {
+                    Date = (DateTime)row[0],
+                    SoilMineralN = values[0],
+                    UptakeN = values[1],
+                    ResidueN = values[2],
+                    SoilOMN = values[3],
+                    FertiliserN = values[4],
+                    CropN = values[5],
+                    ProductN = values[6],
+                    LostN = values[7],
+                    RSWC = values[8],
+                    Drainage = values[9],
+                    Irrigation = values[10],
+                    GreenCover = values[11],
+                };
+
+                result.Add(data);
+            }
+
+            return result;
         }
 
         public IEnumerable<CropCoefficient> GetCropCoefficients()
@@ -53,8 +86,10 @@ namespace SVSModel
             using (var reader = new StreamReader(stream, Encoding.UTF8))
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
+                csv.Context.RegisterClassMap<CropCoefficientMap>();
+
                 var cropData = csv.GetRecords<CropCoefficient>();
-                return cropData;
+                return cropData.ToList();
             }
         }
 
@@ -69,7 +104,7 @@ namespace SVSModel
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 var data = csv.GetRecords<WeatherStationData>();
-                return data;
+                return data.ToList();
             }
         }
 

@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<id>SVSModel</id>
-		<version>1.0.12</version>
+		<version>1.0.19</version>
 		<authors>PotatoesNZ</authors>
 		<description>A wrapper of the SVS Model code</description>
 	</PropertyGroup>
@@ -15,18 +15,24 @@
 
 	<ItemGroup>
 		<None Remove="Data\CropCoefficientTableFull.csv" />
+		<None Remove="Data\Met\gore.csv" />
+		<None Remove="Data\Met\hastings.csv" />
+		<None Remove="Data\Met\levin.csv" />
+		<None Remove="Data\Met\lincoln.csv" />
+		<None Remove="Data\Met\pukekohe.csv" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="Data\CropCoefficientTableFull.csv" />
+		<EmbeddedResource Include="Data\Met\gore.csv" />
+		<EmbeddedResource Include="Data\Met\hastings.csv" />
+		<EmbeddedResource Include="Data\Met\levin.csv" />
+		<EmbeddedResource Include="Data\Met\lincoln.csv" />
+		<EmbeddedResource Include="Data\Met\pukekohe.csv" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="30.0.1" />
 		<PackageReference Include="Microsoft.Data.Analysis" Version="0.20.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="Data\Met\" />
 	</ItemGroup>
 </Project>
