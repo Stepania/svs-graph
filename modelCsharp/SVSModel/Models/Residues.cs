@@ -1,11 +1,11 @@
-﻿using Helper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using SVSModel.Configuration;
 
-namespace SVSModel
+namespace SVSModel.Models
 {
-    class Residues
+    public class Residues
     {
         /// <summary>
         /// Calculates the daily nitrogen mineralised as a result of residue decomposition
@@ -13,8 +13,10 @@ namespace SVSModel
         /// <param name="meanT">A date indexed dictionary of daily mean temperatures</param>
         /// <param name="rswc">A date indexed dictionary of daily releative soil water content</param>
         /// <returns>Date indexed series of daily N mineralised from residues</returns>
-        public static Dictionary<DateTime, double> Mineralisation(Dictionary<DateTime,double> rswc, 
-                                                                  Dictionary<DateTime, double> meanT)
+        public static Dictionary<DateTime, double> Mineralisation(
+            Dictionary<DateTime, double> rswc,
+            Dictionary<DateTime, double> meanT,
+            Config config)
         {
             DateTime[] simDates = rswc.Keys.ToArray();
             Dictionary<DateTime, double> NResidues = Functions.dictMaker(simDates, new double[simDates.Length]);
@@ -44,17 +46,17 @@ namespace SVSModel
                     NResidues[d] += mineralisation;
                 }
                 //Add residues to system at harvest
-                if (d == Config.Prior.HarvestDate)
+                if (d == config.Prior.HarvestDate)
                 {
-                    PresRoot[d] = Config.Prior.ResRoot;
-                    PresStover[d] = Config.Prior.ResStover;
-                    PresFieldLoss[d] = Config.Prior.FieldLoss;
+                    PresRoot[d] = config.Prior.ResRoot;
+                    PresStover[d] = config.Prior.ResStover;
+                    PresFieldLoss[d] = config.Prior.FieldLoss;
                 }
-                if (d == Config.Current.HarvestDate)
+                if (d == config.Current.HarvestDate)
                 {
-                    PresRoot[d] = Config.Current.ResRoot;
-                    PresStover[d] = Config.Current.ResStover;
-                    PresFieldLoss[d] = Config.Current.ResFieldLoss;
+                    PresRoot[d] = config.Current.ResRoot;
+                    PresStover[d] = config.Current.ResStover;
+                    PresFieldLoss[d] = config.Current.ResFieldLoss;
                 }
             }
             return NResidues;

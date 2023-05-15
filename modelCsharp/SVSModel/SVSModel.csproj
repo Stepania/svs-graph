@@ -1,31 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<id>SVSModel</id>
+		<version>1.0.19</version>
+		<authors>PotatoesNZ</authors>
+		<description>A wrapper of the SVS Model code</description>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
-  </PropertyGroup>
+	<ItemGroup>
+		<None Remove="Data\CropCoefficientTableFull.csv" />
+		<None Remove="Data\Met\gore.csv" />
+		<None Remove="Data\Met\hastings.csv" />
+		<None Remove="Data\Met\levin.csv" />
+		<None Remove="Data\Met\lincoln.csv" />
+		<None Remove="Data\Met\pukekohe.csv" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Data\CropCoefficientTableFull.csv" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Data\CropCoefficientTableFull.csv" />
+		<EmbeddedResource Include="Data\Met\gore.csv" />
+		<EmbeddedResource Include="Data\Met\hastings.csv" />
+		<EmbeddedResource Include="Data\Met\levin.csv" />
+		<EmbeddedResource Include="Data\Met\lincoln.csv" />
+		<EmbeddedResource Include="Data\Met\pukekohe.csv" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Data\CropCoefficientTableFull.csv" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="ExcelDna.AddIn" Version="1.7.0-rc1" />
-    <PackageReference Include="GenericParser" Version="1.1.6" />
-    <PackageReference Include="Microsoft.Data.Analysis" Version="0.20.0" />
-  </ItemGroup>
-  
-  <Target Name="PackedReferences" AfterTargets="AfterBuild" BeforeTargets="ExcelDnaBuild">
-    <ItemGroup>
-      <References Include="$(OutDir)*.dll" Exclude="$(OutDir)$(TargetFileName)"/>
-    </ItemGroup>
-
-    <PropertyGroup>
-      <ExcelAddInInclude>@(References)</ExcelAddInInclude>
-    </PropertyGroup>
-  </Target>
-  
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="30.0.1" />
+		<PackageReference Include="Microsoft.Data.Analysis" Version="0.20.0" />
+	</ItemGroup>
 </Project>

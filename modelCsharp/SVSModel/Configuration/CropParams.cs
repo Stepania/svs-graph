@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Helper
+namespace SVSModel.Configuration
 {
     /// <summary>
     /// Class that stores the configuration information for a specific crop in the correct type.  
@@ -13,10 +13,9 @@ namespace Helper
         {
             get
             {
-                if (TypicalYieldUnits == "kg/head")
-                    return TypicalYield * TypicalPopulation;
-                else
-                    return TypicalYield * Constants.UnitConversions[TypicalYieldUnits];
+                if (TypicalYieldUnits == "kg/head") return TypicalYield * TypicalPopulation;
+
+                return TypicalYield * Constants.UnitConversions[TypicalYieldUnits];
             }
         }
         public string TypicalYieldUnits { get; private set; }
@@ -35,6 +34,7 @@ namespace Helper
         public double RootN { get; private set; }
         public double StoverN { get; private set; }
         public double ProductN { get; private set; }
+
         public CropParams(Dictionary<string, object> c)
         {
             TypicalYield = Functions.Num(c["Typical Yield"]);
