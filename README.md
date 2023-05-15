@@ -1,3 +1,5 @@
+[![build solution](https://github.com/PlantandFoodResearch/SVS/actions/workflows/build-solution.yml/badge.svg)](https://github.com/PlantandFoodResearch/SVS/actions/workflows/build-solution.yml)
+
 # SVS
 
 The C# version of the N balance model is in the `ModelCSharp` dirrectory.
