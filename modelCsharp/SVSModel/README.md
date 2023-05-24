@@ -2,6 +2,6 @@
 First update the `SVSModel.csproj` `<version>` field, then run these commands with the version number replacing the `X.X.X`
 
 ```bash
-$ dotnet pack SVSModel.csproj
-$ dotnet nuget push bin/Debug/SVSModel.X.X.X.nupkg --source "svs-model-calculator" --api-key az --interactive
+$ dotnet pack SVSModel/SVSModel.csproj
+$ dotnet nuget push SVSModel/bin/Debug/SVSModel.X.X.X.nupkg --source "https://pkgs.dev.azure.com/rezaresystems/48ae16c6-5f20-44a0-ad41-e047c311de0a/_packaging/svs-model-calculator/nuget/v3/index.json" --api-key az --interactive
 ```
