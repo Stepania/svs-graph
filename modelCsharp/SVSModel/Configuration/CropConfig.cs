@@ -12,9 +12,14 @@ namespace SVSModel.Configuration
         public string CropNameFull { get; set; }
         public string EstablishStage { get; set; }
         public string HarvestStage { get; set; }
-        public double SaleableYield { get; set; }
+
+        /// <summary>
+        /// Model code is expecting kg/ha, so this field _must_ be in those units
+        /// </summary>
+        public double SaleableYield { get; private set; }
         public string Units { get; set; }
-        public double ToKGperHA { get { return Constants.UnitConversions[Units]; } }
+        public double ToKGperHA => Constants.UnitConversions[Units];
+
         public double FieldLoss { get; set; }
         public double DressingLoss { get; set; }
         public double MoistureContent { get; set; }
@@ -42,6 +47,17 @@ namespace SVSModel.Configuration
             HarvestDate = Functions.Date(c[pos + "HarvestDate"]);
             ResidueFactRetained = Constants.ResidueFactRetained[c[pos + "ResidueRemoval"].ToString()];
             ResidueFactIncorporated = Constants.ResidueIncorporation[c[pos + "ResidueIncorporation"].ToString()];
+        }
+
+        /// <summary>
+        /// Call this after initializing Units
+        /// Converts the raw value to kg/ha for the model code
+        /// To be used by interfaces outside of the excel sheet
+        /// </summary>
+        /// <param name="rawYield">The raw value from form</param>
+        public void SetYield(double rawYield)
+        {
+            SaleableYield = rawYield * ToKGperHA;
         }
     }
 }
