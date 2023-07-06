@@ -17,8 +17,6 @@ namespace SVSModel.Configuration
         /// Model code is expecting kg/ha, so this field _must_ be in those units
         /// </summary>
         public double SaleableYield { get; private set; }
-        public string Units { get; set; }
-        public double ToKGperHA => Constants.UnitConversions[Units];
 
         public double FieldLoss { get; set; }
         public double DressingLoss { get; set; }
@@ -34,12 +32,16 @@ namespace SVSModel.Configuration
 
         public CropConfig() { }
 
+        /// <summary>
+        /// Constructor used only by the Excel model
+        /// </summary>
         public CropConfig(Dictionary<string, object> c, string pos)
         {
             CropNameFull = c[pos + "CropNameFull"].ToString();
             EstablishStage = c[pos + "EstablishStage"].ToString();
             HarvestStage = c[pos + "HarvestStage"].ToString();
-            SaleableYield = Functions.Num(c[pos + "SaleableYield"]) * 1000; //UI sends yield in t/ha but model works in kg/ha so convert here
+            // UI sends yield in t/ha but model works in kg/ha so convert here
+            SaleableYield = Functions.Num(c[pos + "SaleableYield"]) * Constants.UnitConversions["t/ha"];
             FieldLoss = Functions.Num(c[pos + "FieldLoss"]);
             DressingLoss = Functions.Num(c[pos + "DressingLoss"]);
             MoistureContent = Functions.Num(c[pos + "MoistureContent"]);
@@ -55,9 +57,20 @@ namespace SVSModel.Configuration
         /// To be used by interfaces outside of the excel sheet
         /// </summary>
         /// <param name="rawYield">The raw value from form</param>
-        public void SetYield(double rawYield)
+        /// <param name="rawUnits">The raw units from form</param>
+        /// <param name="population">The amount of crop when measuring in kg/head</param>
+        public void SetYield(double rawYield, string rawUnits, double? population)
         {
-            SaleableYield = rawYield * ToKGperHA;
+            var toKGperHA = Constants.UnitConversions[rawUnits];
+
+            if (rawUnits == "kg/head")
+            {
+                SaleableYield = rawYield * population.GetValueOrDefault();
+            }
+            else
+            {
+                SaleableYield = rawYield * toKGperHA;
+            }
         }
     }
 }
