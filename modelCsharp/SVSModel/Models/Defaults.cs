@@ -4,24 +4,24 @@ namespace SVSModel.Models
 {
     public class Defaults
     {
-        public static readonly string PriorCropType = "Barley";
-        public static readonly string PriorCropName = "Fodder";
-        public static readonly string PriorVariety = "General";
-        public static readonly string PriorCropNameFull = $"{PriorCropType} {PriorCropName} {PriorVariety}";
+        public static readonly string PriorCropColloquial = "Oat";
+        public static readonly string PriorCropEndUse = "Fodder";
+        public static readonly string PriorCropType = "General";
+        public static readonly string PriorCropNameFull = $"{PriorCropType} {PriorCropEndUse} {PriorCropType}";
 
-        public static readonly string CurrentCropType = "Oat";
-        public static readonly string CurrentCropName = "Fodder";
-        public static readonly string CurrentVariety = "General";
-        public static readonly string CurrentCropNameFull = $"{CurrentCropType} {CurrentCropName} {CurrentVariety}";
+        public static readonly string CurrentCropColloquial = "Oat";
+        public static readonly string CurrentCropEndUse = "Fodder";
+        public static readonly string CurrentCropType = "General";
+        public static readonly string CurrentCropNameFull = $"{CurrentCropType} {CurrentCropEndUse} {CurrentCropType}";
 
-        public static readonly string NextCropType = "Oat";
-        public static readonly string NextCropName = "Fodder";
-        public static readonly string NextVariety = "General";
-        public static readonly string NextCropNameFull = $"{NextCropType} {NextCropName} {NextVariety}";
+        public static readonly string NextCropColloquial = "Oat";
+        public static readonly string NextCropEndUse = "Fodder";
+        public static readonly string NextCropType = "General";
+        public static readonly string NextCropNameFull = $"{NextCropType} {NextCropEndUse} {NextCropType}";
 
         public static readonly string EstablishStage = "Seed";
         public static readonly string HarvestStage = "EarlyReproductive";
-        public static readonly double SaleableYield = 100;
+        public static readonly double SaleableYield = 10;
         public static readonly string Units = "t/ha";
 
         public static readonly double FieldLoss = 0;
