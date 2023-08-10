@@ -28,7 +28,7 @@ namespace SVSModel.Models
         public static readonly double DressingLoss = 0;
         public static readonly double MoistureContent = 9;
 
-        public static readonly double GrowingDays = 125;
+        public static readonly int GrowingDays = 125;
         public static readonly DateTime EstablishDate = DateTime.Today;
         public static readonly DateTime HarvestDate = DateTime.Today.AddDays(GrowingDays);
 
@@ -36,6 +36,7 @@ namespace SVSModel.Models
         public static readonly string ResidueIncorporation = "Full (Plough)";
 
         public static readonly string SoilOrder = "Brown";
+        public static readonly string SoilTexture = "Clay";
         public static readonly string SampleDepth = "0-30cm";
         public static readonly double BulkDensity = 1.22;
         public static readonly string PMNtype = "PMN";
@@ -49,6 +50,6 @@ namespace SVSModel.Models
         public static readonly double Trigger = 30;
         public static readonly double Efficiency = 0.8;
 
-        public static readonly double AWC = 120;
+        public static readonly int AWC = 120;
     }
 }
