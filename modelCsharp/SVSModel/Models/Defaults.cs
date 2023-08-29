@@ -7,17 +7,17 @@ namespace SVSModel.Models
         public static readonly string PriorCropColloquial = "Oat";
         public static readonly string PriorCropEndUse = "Fodder";
         public static readonly string PriorCropType = "General";
-        public static readonly string PriorCropNameFull = $"{PriorCropType} {PriorCropEndUse} {PriorCropType}";
+        public static readonly string PriorCropNameFull = $"{PriorCropColloquial} {PriorCropEndUse} {PriorCropType}";
 
         public static readonly string CurrentCropColloquial = "Oat";
         public static readonly string CurrentCropEndUse = "Fodder";
         public static readonly string CurrentCropType = "General";
-        public static readonly string CurrentCropNameFull = $"{CurrentCropType} {CurrentCropEndUse} {CurrentCropType}";
+        public static readonly string CurrentCropNameFull = $"{CurrentCropColloquial} {CurrentCropEndUse} {CurrentCropType}";
 
         public static readonly string NextCropColloquial = "Oat";
         public static readonly string NextCropEndUse = "Fodder";
         public static readonly string NextCropType = "General";
-        public static readonly string NextCropNameFull = $"{NextCropType} {NextCropEndUse} {NextCropType}";
+        public static readonly string NextCropNameFull = $"{NextCropColloquial} {NextCropEndUse} {NextCropType}";
 
         public static readonly string EstablishStage = "Seed";
         public static readonly string HarvestStage = "EarlyReproductive";
