@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using SVSModel.Configuration;
 using ExcelDna.Integration;
+using System.Diagnostics;
+using System.Linq;
+using SVSModel.Models;
 
 namespace SVSModel.Excel
 {
@@ -38,6 +41,7 @@ namespace SVSModel.Excel
                 }
             }
 
+
             if (configErrors.Count == 0)
             {
                 Dictionary<DateTime, double> _tt = Functions.dictMaker(met, "MeanT");
@@ -46,6 +50,9 @@ namespace SVSModel.Excel
                 Dictionary<DateTime, double> _testResults = Functions.dictMaker(testResults, "Value");
                 Dictionary<DateTime, double> _nApplied = Functions.dictMaker(nApplied, "Amount");
                 var _config = new Config(Functions.dictMaker(config));
+
+                Trace.WriteLine("exxcelentinterface");
+
                 return Simulation.SimulateField(_tt, _rain, _pet, _testResults, _nApplied, _config);
             }
             else
@@ -81,7 +88,10 @@ namespace SVSModel.Excel
         [ExcelFunction(Description = "Gets crop coefficient table")]
         public static object[,] GetCropCoefficients()
         {
-            return Functions.packDataFrame(SVSModel.Crop.LoadCropCoefficients());
+            //Trace.WriteLine("exxcelentinterface");
+            return Functions.packDataFrame(Crop.LoadCropCoefficients());
         }
+
+        
     }
 }
