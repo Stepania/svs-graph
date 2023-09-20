@@ -15,9 +15,6 @@ namespace WinFormsSVS_test
 
             startButton.BackColor = Color.BlueViolet;
             System.Threading.Thread.Sleep(3000);
-
-            Trace.WriteLine("Hello, World!");
-
             Test.Main(TestConfigData.configDict);
             
         }
